@@ -1,4 +1,4 @@
-//    Copyright 2019-2020 namazso <admin@namazso.eu>
+//    Copyright 2019-2021 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -14,9 +14,14 @@
 //    You should have received a copy of the GNU General Public License
 //    along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
 #pragma once
-#include "Hasher.h"
 
-class PropPage;
+#include "path.h"
+
+#include <atomic>
+#include <memory>
+#include <array>
+
+class Coordinator;
 
 class FileHashTask
 {
@@ -67,10 +72,9 @@ class FileHashTask
 
   HANDLE _handle;
 
-  PropPage* _prop_page;
+  Coordinator* _prop_page;
 
-  tstring _display_name;
-  std::vector<uint8_t> _expected_hash;
+  ProcessedFileList::FileInfo _file_info;
 
   uint64_t _file_size{};
   uint64_t _current_offset{};
@@ -86,7 +90,7 @@ class FileHashTask
   int _match_state{};
   bool _cancelled{};
 
-  uint8_t _lparam_idx[HashAlgorithm::k_count];
+  uint8_t _lparam_idx[HashAlgorithm::k_count]{};
 
 public:
   FileHashTask(const FileHashTask&) = delete;
@@ -94,7 +98,7 @@ public:
   FileHashTask& operator=(const FileHashTask&) = delete;
   FileHashTask& operator=(FileHashTask&&) = delete;
 
-  FileHashTask(const tstring& path, PropPage* prop_page, tstring display_name, std::vector<uint8_t> expected_hash = {});
+  FileHashTask(Coordinator* prop_page, const std::wstring& path, const ProcessedFileList::FileInfo& file_info);
 
   // You should only ever delete this object after Finish() was called or StartProcessing() was never called.
   // TODO: check this somehow
@@ -116,7 +120,7 @@ private:
   void FinishedBlock();
 
   // Do NOT use "this" after calling Finish(), as it might be deleted
-  // This may be the last reference to PropPage, which then deletes us in destructor.
+  // This may be the last reference to Coordinator, which then deletes us in destructor.
   void Finish();
 
   size_t GetCurrentBlockSize() const
@@ -128,10 +132,10 @@ private:
   }
 
 public:
-  LPARAM ToLparam(size_t hasher) const { return (LPARAM)&_lparam_idx[hasher]; }
+  LPARAM ToLparam(size_t hasher) const { return reinterpret_cast<LPARAM>(&_lparam_idx[hasher]); }
   static std::pair<FileHashTask*, size_t> FromLparam(LPARAM lparam)
   {
-    const auto lp = (const std::uint8_t*)lparam;
+    const auto lp = reinterpret_cast<const uint8_t*>(lparam);
     return { CONTAINING_RECORD(lp - *lp, FileHashTask, _lparam_idx), *lp };
   }
 
@@ -139,7 +143,7 @@ public:
   uint64_t GetSize() const { return _file_size; }
   HANDLE GetHandle() const { return _handle; }
   const hash_results_t& GetHashResult() const { return _hash_results; }
-  const tstring& GetDisplayName() const { return _display_name; }
+  const std::wstring& GetDisplayName() const { return _file_info.relative_path; }
 
   enum : int
   {

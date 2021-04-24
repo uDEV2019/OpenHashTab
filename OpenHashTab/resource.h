@@ -3,10 +3,13 @@
 // Used by OpenHashTab.rc
 //
 #define IDD_SETTINGS                    9
-#define IDS_PROJNAME                    100
 #define IDR_OPENHASHTAB                 101
 #define IDR_OPENHASHTABSHLEXT           106
 #define IDD_OPENHASHTAB_PROPPAGE        107
+#define IDM_COPY_HASH                   107
+#define IDM_COPY_LINE                   108
+#define IDM_COPY_FILE                   109
+#define IDM_COPY_EVERYTHING             110
 #define IDS_FILENAME                    202
 #define IDC_HASH_LIST                   203
 #define IDS_ALGORITHM                   203
@@ -28,21 +31,75 @@
 #define IDS_DONE                        214
 #define IDC_BUTTON_SETTINGS             214
 #define IDS_PROCESSING                  215
-#define IDC_LIST1                       215
 #define IDC_ALGORITHM_LIST              215
+#define IDC_BUTTON_CANCEL               215
 #define IDS_HASHES                      216
 #define IDC_PROGRESS                    216
 #define IDS_CLIPBOARD                   217
+#define IDC_CHECK_DISPLAY_UPPERCASE     217
+#define IDC_BUTTON_VT                   217
 #define IDS_NOMATCH                     218
+#define IDC_CHECK_LOOK_FOR_SUMFILES     218
 #define IDS_ERROR                       219
+#define IDC_CHECK_SUMFILE_UPPERCASE     219
+#define IDS_CANCEL                      220
+#define IDC_CHECK_SUMFILE_UNIX_ENDINGS  220
+#define IDI_ICON1                       221
+#define IDC_CHECK_SUMFILE_USE_DOUBLE_SPACE 221
+#define IDC_CHECK_SUMFILE_FORWARD_SLASHES 222
+#define IDS_DISPLAY_UPPERCASE           222
+#define IDC_CHECK_SUMFILE_DOT_HASH_COMPATIBLE 223
+#define IDS_LOOK_FOR_SUMFILES           223
+#define IDC_CHECK_SUMFILE_BANNER        224
+#define IDS_SUMFILE_UPPERCASE           224
+#define IDC_CHECK_SUMFILE_BANNER_DATE   225
+#define IDS_SUMFILE_UNIX_ENDINGS        225
+#define IDS_SUMFILE_USE_DOUBLE_SPACE    226
+#define IDC_CHECK_CLIPBOARD_AUTOENABLE  226
+#define IDS_SUMFILE_FORWARD_SLASHES     227
+#define IDC_BUTTON_CHECK_FOR_UPDATES    227
+#define IDS_SUMFILE_DOT_HASH_COMPATIBLE 228
+#define IDC_CHECK_CLIPBOARD_AUTOENABLE_IF_NONE 228
+#define IDS_SUMFILE_BANNER              229
+#define IDC_CHECK_CLIPBOARD_AUTOENABLE_EXCLUSIVE 229
+#define IDS_SUMFILE_BANNER_DATE         230
+#define IDI_ICON_VT                     231
+#define IDC_CHECK_CHECKAGAINST_STRICT   231
+#define IDI_ICON2                       232
+#define IDI_ICON_COG                    232
+#define IDC_CHECK_HASH_SUMFILE_TOO      232
+#define IDS_CHECK_FOR_UPDATES           233
+#define IDC_CHECK_CHECKAGAINST_AUTOFORMAT 233
+#define IDS_COPY_HASH                   234
+#define IDC_CHECK_SUMFILE_ALGORITHM_ONLY 234
+#define IDS_COPY_LINE                   235
+#define IDS_COPY_FILE                   236
+#define IDS_COPY_EVERYTHING             237
+#define IDS_VT_NO_COMPATIBLE            239
+#define IDS_VT_NOT_FOUND                240
+#define IDS_UPDATE_DISABLED_IN_DEV_BUILD 241
+#define IDS_UPDATE_AVAILABLE_TITLE      242
+#define IDS_UPDATE_AVAILABLE_TEXT       243
+#define IDS_UPDATE_NEWEST_TITLE         244
+#define IDS_UPDATE_NEWEST_TEXT          245
+#define IDS_CLIPBOARD_AUTOENABLE        246
+#define IDS_CLIPBOARD_AUTOENABLE_IF_NONE 247
+#define IDS_CLIPBOARD_AUTOENABLE_EXCLUSIVE 248
+#define IDS_SETTINGS_TITLE              249
+#define IDS_CHECKAGAINST_AUTOFORMAT     250
+#define IDS_CHECKAGAINST_STRICT         251
+#define IDS_HASH_SUMFILE_TOO            252
+#define IDS_ITEM_MATCHING               253
+#define IDS_ITEMS_MATCHING              254
+#define IDS_SUMFILE_ALGORITHM_ONLY      255
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        222
+#define _APS_NEXT_RESOURCE_VALUE        256
 #define _APS_NEXT_COMMAND_VALUE         32768
-#define _APS_NEXT_CONTROL_VALUE         217
-#define _APS_NEXT_SYMED_VALUE           107
+#define _APS_NEXT_CONTROL_VALUE         228
+#define _APS_NEXT_SYMED_VALUE           111
 #endif
 #endif

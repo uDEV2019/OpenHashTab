@@ -1,4 +1,4 @@
-//    Copyright 2019-2020 namazso <admin@namazso.eu>
+//    Copyright 2019-2021 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -14,9 +14,11 @@
 //    You should have received a copy of the GNU General Public License
 //    along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
 #pragma once
-#include "resource.h"       // main symbols
-
+#include "resource.h"
 #include "OpenHashTab_i.h"
+
+#include <list>
+#include <string>
 
 #if defined(_WIN32_WCE) && !defined(_CE_DCOM) && !defined(_CE_ALLOW_SINGLE_THREADED_OBJECTS_IN_MTA)
 #error "Single-threaded COM objects are not properly supported on Windows CE \
@@ -31,14 +33,14 @@ DCOM Windows CE platforms."
 using namespace ATL;
 
 class ATL_NO_VTABLE COpenHashTabShlExt :
-	public CComObjectRootEx<CComSingleThreadModel>,
-	public CComCoClass<COpenHashTabShlExt, &CLSID_OpenHashTabShlExt>,
-	public IShellExtInit,
-  public IShellPropSheetExt
+  public CComObjectRootEx<CComSingleThreadModel>,
+  public CComCoClass<COpenHashTabShlExt, &CLSID_OpenHashTabShlExt>,
+  public IShellExtInit,
+  public IShellPropSheetExt,
+  public IContextMenu
 {
 protected:
-  std::list<tstring> _files;
-  tstring _base;
+  std::list<std::wstring> _files_raw;
 
 public:
   COpenHashTabShlExt() = default;
@@ -61,21 +63,43 @@ public:
     _In_ LPFNSVADDPROPSHEETPAGE replace_with_proc,
     _In_ LPARAM                 lparam
   ) override;
+  
+  // IContextMenu
+  HRESULT STDMETHODCALLTYPE QueryContextMenu(
+    _In_  HMENU hmenu,
+    _In_  UINT indexMenu,
+    _In_  UINT idCmdFirst,
+    _In_  UINT idCmdLast,
+    _In_  UINT uFlags
+  ) override;
+
+  HRESULT STDMETHODCALLTYPE InvokeCommand(
+    _In_  CMINVOKECOMMANDINFO* pici
+  ) override;
+
+  HRESULT STDMETHODCALLTYPE GetCommandString(
+    _In_  UINT_PTR idCmd,
+    _In_  UINT uType,
+    _Reserved_  UINT* pReserved,
+    _Out_writes_bytes_((uType& GCS_UNICODE) ? (cchMax * sizeof(wchar_t)) : cchMax) _When_(!(uType& (GCS_VALIDATEA | GCS_VALIDATEW)), _Null_terminated_)  CHAR* pszName,
+    _In_  UINT cchMax
+  ) override;
 
 DECLARE_REGISTRY_RESOURCEID(IDR_OPENHASHTABSHLEXT)
 
 DECLARE_NOT_AGGREGATABLE(COpenHashTabShlExt)
 
 BEGIN_COM_MAP(COpenHashTabShlExt)
-	COM_INTERFACE_ENTRY(IShellExtInit)
+  COM_INTERFACE_ENTRY(IShellExtInit)
   COM_INTERFACE_ENTRY(IShellPropSheetExt)
+  COM_INTERFACE_ENTRY(IContextMenu)
 END_COM_MAP()
 
-	DECLARE_PROTECT_FINAL_CONSTRUCT()
+  DECLARE_PROTECT_FINAL_CONSTRUCT()
 
-	HRESULT FinalConstruct() { return S_OK; }
+  HRESULT FinalConstruct() { return S_OK; }
 
-	void FinalRelease() { }
+  void FinalRelease();
 };
 
 OBJECT_ENTRY_AUTO(__uuidof(OpenHashTabShlExt), COpenHashTabShlExt)

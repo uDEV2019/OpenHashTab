@@ -1,21 +1,26 @@
 # OpenHashTab
 
+[![License](https://img.shields.io/github/license/namazso/OpenHashTab)](COPYING) [![Weblate translation status](https://hosted.weblate.org/widgets/openhashtab/-/main/svg-badge.svg)](https://hosted.weblate.org/projects/openhashtab/main/) [![Downloads](https://img.shields.io/github/downloads/namazso/OpenHashTab/total)](https://github.com/namazso/OpenHashTab/releases/latest) [![GitHub Version](https://img.shields.io/github/v/release/namazso/OpenHashTab)](https://github.com/namazso/OpenHashTab/releases/latest) [![Chocolatey Version](https://img.shields.io/chocolatey/v/openhashtab)](https://chocolatey.org/packages/openhashtab/) ![Commits since release](https://img.shields.io/github/commits-since/namazso/OpenHashTab/latest/master)
+
 ## About
 
 OpenHashTab is a shell extension for conveniently calculating and checking file hashes from file properties.
 
 ## Features
 
-* Support for 14 different selectable algorithms, see **Algorithms**
-* md5sum / sha1sum / sha256sum / etc.. compatibility for checking and exporting hashes
-* Easy to use checker and single-click sumfile export to clipboard or file
-* Select then 
+* Support for 22 algorithms, see **Algorithms**
 * High performance hash calculation
 * Native Windows looks
+* High DPI screen support
 * Long path support\*
-* Multilingual: English, German, Italian, Hungarian, Simplified Chinese, Spanish, Danish, Russian
+* Multilingual (Consider contributing to translation!)
+* Check hashes against VirusTotal with a button
+* Hash checking against a checksum file (Supported: hex hash next to file, \*sum output (hex or base64), corz .hash, SFV)
+* Hash export to file or clipboard (Supported: \*sum output, corz .hash, SFV)
+* Optional context menu option for faster access
+* File associations and standalone mode
 
-\* On Windows 8 or later, to the extent Windows supports it.
+\* to the extent Windows and configuration supports it. [Enable long paths](https://www.tenforums.com/tutorials/51704-enable-disable-win32-long-paths-windows-10-a.html) on 1607+ for better support.
 
 ## System requirements
 
@@ -26,28 +31,36 @@ OpenHashTab is a shell extension for conveniently calculating and checking file 
 
 Most of the actions should be obvious. Some not-so-obvious features are listed here:
 
-* You can select multiple files or folders, all files will be hashed.
+* You can select multiple files or folders, all files will be hashed, directories traversed
 * Double click hash to copy it
 * Double click name or algorithm to copy the line in sumfile format
-* Select one or more lines then right click to copy all columns of the lines, separated by tabs
-* Double right click to copy everything, separated by tabs
+* Right click for popup menu: copy hash, copy filename, copy line, copy everything
 * The counters next to the status text is in the format `(match/mismatch/nothing to check against/error)`
+* Columns sort lexographically, except the hash column which sorts by match type
 * Selecting the tab on a sumfile will interpret it as such and hash the files listed in it.
-* If a hashed file has a sumfile with same filename plus one of the [recognized sumfile extensions](https://github.com/namazso/OpenHashTab/blob/master/OpenHashTab/Hasher.cpp#L242-L251), the file hash is checked against it.
+* If a hashed file has a sumfile with same filename plus one of the recognized sumfile extensions and the option for it is enabled, the file hash is checked against it.
 
 ## Algorithms
 
 * CRC32
-* MD2, MD4, MD5
+* xxHash (XXH32, XXH64)
+* xxHash3 (64 and 128 bit variants)
+* MD4, MD5
 * RipeMD160
 * Blake2sp
 * SHA-1
 * SHA-2 (SHA-224, SHA-256, SHA-384, SHA-512)
-* SHA-3 (SHA3-256, SHA3-384, SHA3-512)
+* SHA-3 (SHA3-224, SHA3-256, SHA3-384, SHA3-512)
+* BLAKE3
+* KangarooTwelve (264 bit)
+* ParallelHash128 (264 bit) and ParallelHash256 (528 bit)
+* Streebog (GOST R 34.11-12)
 
 ## Download
 
-[Latest release](https://github.com/namazso/OpenHashTab/releases/latest/download/OpenHashTab_setup.exe)
+[Latest release](https://github.com/namazso/OpenHashTab/releases/latest)
+
+[Development builds](https://github.com/namazso/OpenHashTab/actions?query=branch%3Amaster)
 
 ## Screenshot
 
@@ -60,35 +73,42 @@ This software is provided completely free of charge to you, however I spent time
 * Bitcoin: 1N6UzYgzn3sLV33hB2iS3FvYLzD1G4CuS2
 * Monero: 83sJ6GoeKf1U47vD9Tk6y2MEKJKxPJkECG3Ms7yzVGeiBYg2uYhBAUAZKNDH8VnAPGhwhZeqBnofDPgw9PiVtTgk95k53Rd
 
+## Translation
+
+![Weblate translation status](https://hosted.weblate.org/widgets/openhashtab/-/main/multi-auto.svg)
+
+Translate the project at [Weblate](https://hosted.weblate.org/projects/openhashtab/main/)
+
+### Translation contributors
+
+In addition to contributors reported by git, some translations were also contributed by: **xprism**, **[@NieLnchn](https://github.com/NieLnchn)** (Simplified Chinese), **Niccolò Zanichelli** (Italian)
+
 ## Building
 
 ### Requirements
 
-* Visual Studio 2019
+* MSYS2 with make
+* Visual Studio 2019 16.8+ (with ARM64 and clang-cl)
 * [InnoSetup](http://www.jrsoftware.org/isinfo.php)
 
 ### Compiling
 
-1. Open OpenHashTab.sln and click __Build Solution__ on x64/Release and Win32/Release settings
-2. Use Inno Setup Compiler to compile installer.iss to get the installer
+1. Run build-xkcp.bat
+2. Build AlgorithmsDll.sln for all Release targets
+3. Build OpenHashTab.sln for all Release targets
+4. Use Inno Setup Compiler to compile installer.iss
 
-## Translation
-
-Look into the `Localization` folder, figuring out what to translate should be trivial. If you have enough development knowledge send a PR, otherwise post an Issue. Thanks for making OpenHashTab better.
-
-### Translation contributors
-
-**xprism**, **[@NieLnchn](https://github.com/NieLnchn)** (Simplified Chinese), **Niccolò Zanichelli** (Italian), **[@vmcall](https://github.com/vmcall/)** (Danish), **[@wvxwxvw](https://github.com/wvxwxvw/)** (Russian)
+More options and commands can be found in the [GitHub Actions workflow](.github/workflows/ci.yml)
 
 ## Relationship to HashTab
 
-HashTab is a similar purpose proprietary software. While this software has been inspired by it, I was never an user of HashTab and this software contains no code or anything related to it.
+HashTab is a similar purpose proprietary software. While this software has been inspired by it, I was never an user of HashTab and this software contains no code or resources related to it.
 
 ## License
 
-All files are licensed under the following license, unless explicitly stated otherwise in the file:
+All original code in this repo are licensed under the following license, unless explicitly stated otherwise in the file:
 
-	Copyright 2019-2020 namazso <admin@namazso.eu>
+	Copyright 2019-2021 namazso <admin@namazso.eu>
 	OpenHashTab - File hashing shell extension
 	
 	OpenHashTab is free software: you can redistribute it and/or modify
@@ -103,3 +123,5 @@ All files are licensed under the following license, unless explicitly stated oth
 	
 	You should have received a copy of the GNU General Public License
 	along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
+
+This software also contains or uses code from various other sources, for a complete list see [license.installer.txt](license.installer.txt)

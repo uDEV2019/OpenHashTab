@@ -1,4 +1,4 @@
-//    Copyright 2019-2020 namazso <admin@namazso.eu>
+//    Copyright 2019-2021 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -15,17 +15,13 @@
 //    along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
 #include "stdafx.h"
 
-#include "resource.h"
 #include "dllmain.h"
-#include "Queues.h"
-
-#pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version = '6.0.0.0' processorArchitecture = '*' publicKeyToken = '6595b64144ccf1df' language = '*'\"")
 
 COpenHashTabModule _AtlModule;
 
 // DLL Entry Point
 extern "C" BOOL WINAPI DllMain(HINSTANCE instance, DWORD reason, LPVOID reserved)
 {
-	UNREFERENCED_PARAMETER(instance);
-	return _AtlModule.DllMain(reason, reserved);
+  UNREFERENCED_PARAMETER(instance);
+  return _AtlModule.DllMain(reason, reserved);
 }

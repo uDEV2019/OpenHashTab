@@ -1,4 +1,4 @@
-//    Copyright 2019-2020 namazso <admin@namazso.eu>
+//    Copyright 2019-2021 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -19,8 +19,8 @@
 class COpenHashTabModule : public ATL::CAtlDllModuleT<COpenHashTabModule>
 {
 public:
-	DECLARE_LIBID(LIBID_OpenHashTabLib)
-	DECLARE_REGISTRY_APPID_RESOURCEID(IDR_OPENHASHTAB, "{715dae2b-0063-4d88-8f94-3dc072fc3fb0}")
+  DECLARE_LIBID(LIBID_OpenHashTabLib)
+  DECLARE_REGISTRY_APPID_RESOURCEID(IDR_OPENHASHTAB, "{715dae2b-0063-4d88-8f94-3dc072fc3fb0}")
 };
 
 extern class COpenHashTabModule _AtlModule;

@@ -1,4 +1,4 @@
-//    Copyright 2019-2020 namazso <admin@namazso.eu>
+//    Copyright 2019-2021 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -15,16 +15,27 @@
 //    along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
 #pragma once
 
+// Beware: Most of these macros and include ordering are figured out via trying until it compiles.
+
 #ifndef STRICT
 #define STRICT
 #endif
 
 #define NOMINMAX
 
+// thanks, microsoft
+#define Unknown Unknown_FROM_WINDOWS
+
 #include "targetver.h"
+
+#define PHNT_VERSION PHNT_WIN7
 
 #define ISOLATION_AWARE_ENABLED 1
 #define SIDEBYSIDE_COMMONCONTROLS 1
+
+#include <ntstatus.h>
+
+#define WIN32_NO_STATUS
 
 // ATL
 #define _ATL_APARTMENT_THREADED
@@ -37,28 +48,14 @@
 #include <atlcom.h>
 #include <atlctl.h>
 
+// PHNT
+#include <phnt_windows.h>
+#include <phnt.h>
+
 // Windows
-#include <Windows.h>
 #include <WinUser.h>
 #include <CommCtrl.h>
-#include <windowsx.h>
 #include <VersionHelpers.h>
-#include <pathcch.h>
+#include <PathCch.h>
 
-// STL
-#include <cstdint>
-#include <cassert>
-#include <list>
-#include <string>
-#include <vector>
-#include <memory>
-#include <atomic>
-#include <algorithm>
-#include <array>
-#include <mutex>
-#include <sstream>
-
-// concurrentqueue
-#include <blockingconcurrentqueue.h>
-
-using tstring = std::basic_string<TCHAR>;
+#undef Unknown

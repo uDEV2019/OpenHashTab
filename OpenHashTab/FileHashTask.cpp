@@ -1,4 +1,4 @@
-//    Copyright 2019-2020 namazso <admin@namazso.eu>
+//    Copyright 2019-2021 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -16,7 +16,8 @@
 #include "stdafx.h"
 
 #include "FileHashTask.h"
-#include "PropPage.h"
+
+#include "Coordinator.h"
 #include "Queues.h"
 #include "utl.h"
 
@@ -34,7 +35,7 @@ uint8_t* FileHashTask::BlockTryAllocate()
     );
 
     if (p)
-      return (uint8_t*)p;
+      return static_cast<uint8_t*>(p);
   }
 
   ++s_allocations_remaining;
@@ -55,6 +56,7 @@ void FileHashTask::BlockReset(uint8_t* p)
 void FileHashTask::BlockFree(uint8_t* p)
 {
   const auto ret = VirtualFree(p, 0, MEM_RELEASE);
+  (void)ret;
   assert(ret);
   ++s_allocations_remaining;
 }
@@ -67,7 +69,7 @@ VOID NTAPI FileHashTask::HashWorkCallback(
 {
   UNREFERENCED_PARAMETER(instance);
   UNREFERENCED_PARAMETER(work);
-  ((FileHashTask*)ctx)->DoHashRound();
+  static_cast<FileHashTask*>(ctx)->DoHashRound();
 }
 
 VOID WINAPI FileHashTask::IoCallback(
@@ -82,7 +84,7 @@ VOID WINAPI FileHashTask::IoCallback(
   UNREFERENCED_PARAMETER(instance);
   UNREFERENCED_PARAMETER(overlapped);
   UNREFERENCED_PARAMETER(io);
-  ((FileHashTask*)ctx)->OverlappedCompletionRoutine(result, bytes_transferred);
+  static_cast<FileHashTask*>(ctx)->OverlappedCompletionRoutine(result, bytes_transferred);
 }
 
 void FileHashTask::ProcessReadQueue(uint8_t* reuse_block)
@@ -103,20 +105,19 @@ void FileHashTask::ProcessReadQueue(uint8_t* reuse_block)
     BlockFree(reuse_block);
 }
 
-FileHashTask::FileHashTask(const tstring& path, PropPage* prop_page, tstring display_name, std::vector<uint8_t> expected_hash)
+FileHashTask::FileHashTask(Coordinator* prop_page, const std::wstring& path, const ProcessedFileList::FileInfo& file_info)
   : _hash_contexts{}
   , _prop_page{ prop_page }
-  , _display_name{ std::move(display_name) }
-  , _expected_hash { std::move(expected_hash) }
+  , _file_info{ file_info }
 {
   // Instead of exception, set _error because a failed file is still a finished
   // file task. Finish mechanism will trigger on first block read
 
   for (auto i = 0u; i < HashAlgorithm::k_count; ++i)
   {
-    _lparam_idx[i] = i;
-    if (HashAlgorithm::g_hashers[i].IsEnabled())
-      _hash_contexts[i].reset(HashAlgorithm::g_hashers[i].MakeContext());
+    _lparam_idx[i] = static_cast<uint8_t>(i);
+    if (_prop_page->settings.algorithms[i])
+      _hash_contexts[i].reset(HashAlgorithm::Algorithms()[i].MakeContext());
   }
 
   _handle = utl::OpenForRead(path, true);
@@ -134,8 +135,9 @@ FileHashTask::FileHashTask(const tstring& path, PropPage* prop_page, tstring dis
     return;
   }
 
-  _file_size = uint64_t(fi.nFileSizeHigh) << 32 | fi.nFileSizeLow;
-  _file_index = uint64_t(fi.nFileIndexHigh) << 32 | fi.nFileIndexLow;
+  _file_size = static_cast<uint64_t>(fi.nFileSizeHigh) << 32 | fi.nFileSizeLow;
+  _file_index = static_cast<uint64_t>(fi.nFileIndexHigh) << 32 | fi.nFileIndexLow;
+
   // TODO: use this in queue so a lot of files from a slower device can't slow down another faster device
   _volume_serial = fi.dwVolumeSerialNumber;
 
@@ -196,13 +198,13 @@ bool FileHashTask::ReadBlockAsync(uint8_t* reuse_block)
   // Set up OVERLAPPED fields for either reading or enqueueing for read
   _overlapped.Internal = 0; // reserved
   _overlapped.InternalHigh = 0; // reserved
-  _overlapped.Offset = (DWORD)_current_offset;
-  _overlapped.OffsetHigh = (DWORD)(_current_offset >> 32);
+  _overlapped.Offset = static_cast<DWORD>(_current_offset);
+  _overlapped.OffsetHigh = static_cast<DWORD>(_current_offset >> 32);
   //_overlapped.hEvent = this; // for caller use
 
   if (const auto block = reuse_block ? reuse_block : BlockTryAllocate())
   {
-    const auto read_size = (DWORD)GetCurrentBlockSize();
+    const auto read_size = static_cast<DWORD>(GetCurrentBlockSize());
 
     StartThreadpoolIo(_threadpool_io);
 
@@ -320,7 +322,7 @@ void FileHashTask::Finish()
   if (!_error)
   {
     // If we expect a hash but none match, write no match to all algos
-    _match_state = _expected_hash.empty() ? MatchState_None : MatchState_Mismatch;
+    _match_state = _file_info.expected_hashes.empty() ? MatchState_None : MatchState_Mismatch;
 
     for (auto i = 0u; i < HashAlgorithm::k_count; ++i)
     {
@@ -328,8 +330,15 @@ void FileHashTask::Finish()
       const auto it_ctx = _hash_contexts[i].get();
       if(it_ctx)
         it_result = it_ctx->Finish();
-      if (_match_state == MatchState_Mismatch && it_result == _expected_hash)
-        _match_state = i;
+
+      // TODO: O(n^2) BABY HERE WE GO
+      for(const auto& expected : _file_info.expected_hashes)
+      if (_match_state != MatchState_None && it_result == expected)
+      {
+        // secure algorithms trump insecure ones
+        if(_match_state == MatchState_Mismatch || !HashAlgorithm::Algorithms()[_match_state].IsSecure())
+        _match_state = i; // TODO: store all matches somehow
+      }
     }
   }
 

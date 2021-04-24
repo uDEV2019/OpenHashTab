@@ -1,4 +1,4 @@
-//    Copyright 2019-2020 namazso <admin@namazso.eu>
+//    Copyright 2019-2021 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -14,6 +14,10 @@
 //    You should have received a copy of the GNU General Public License
 //    along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
 #pragma once
+
+#include <memory>
+#include <string>
+#include <vector>
 
 #ifdef _DEBUG
 inline void DebugMsg(PCSTR fmt, ...)
@@ -31,112 +35,18 @@ inline void DebugMsg(PCSTR fmt, ...) { }
 
 namespace utl
 {
-  // T should be a class handling a dialog, having implemented these:
-  //   T(HWND hDlg, void* user_param)
-  //     hDlg: the HWND of the dialog, guaranteed to be valid for the lifetime of the object
-  //     user_param: parameter passed to the function creating the dialog
-  //   INT_PTR DlgProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
-  template <typename T>
-  INT_PTR CALLBACK DlgProcClassBinder(HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam)
-  {
-    T* p;
-    if (uMsg == WM_INITDIALOG)
-    {
-      p = new T(hDlg, (void*)lParam);
-      SetWindowLongPtr(hDlg, GWLP_USERDATA, (LONG_PTR)p);
-    }
-    else
-    {
-      p = (T*)GetWindowLongPtr(hDlg, GWLP_USERDATA);
-    }
-    // there are some unimportant messages sent before WM_INITDIALOG
-    const INT_PTR ret = p ? p->DlgProc(uMsg, wParam, lParam) : (INT_PTR)FALSE;
-    if (uMsg == WM_NCDESTROY)
-    {
-      delete p;
-      // even if we were to somehow receive messages after WM_NCDESTROY make sure we dont call invalid ptr
-      SetWindowLongPtr(hDlg, GWLP_USERDATA, 0);
-    }
-    return ret;
-  }
-
-  // PropPage should have the following functions:
-  //   PropPage(args...)
-  //   AddRef(HWND hwnd, LPPROPSHEETPAGE ppsp);
-  //   Release(HWND hwnd, LPPROPSHEETPAGE ppsp);
-  //   Create(HWND hwnd, LPPROPSHEETPAGE ppsp);
-  //
-  // Dialog should have the functions described in DlgProcClassBinder. Additionally, dialog receives a PropPage*
-  //   as lParam in it's constructor. A dialog may or may not get created for a property sheet during lifetime.
-  template <typename PropPage, typename Dialog, typename... Args>
-  HPROPSHEETPAGE MakePropPage(PROPSHEETPAGE psp, Args&&... args)
-  {
-    // Things are generally called in the following order:
-    // name           dlg   when
-    // -----------------------------------------------
-    // ADDREF         no    on opening properties
-    // CREATE         no    on opening properties
-    // *WM_INITDIALOG yes   on first click on sheet
-    // *WM_*          yes   window messages
-    // *WM_NCDESTROY  yes   on closing properties
-    // RELEASE        no    after properties closed
-    //
-    // Ones marked with * won't get called when the user never selects our prop sheet page
-
-    const auto object = new PropPage(std::forward<Args>(args)...);
-
-    psp.pfnDlgProc = [](HWND hDlg, UINT uMsg, WPARAM wParam, LPARAM lParam) -> INT_PTR
-    {
-      if (uMsg == WM_INITDIALOG)
-        lParam = ((LPPROPSHEETPAGE)lParam)->lParam;
-      return DlgProcClassBinder<Dialog>(hDlg, uMsg, wParam, lParam);
-    };
-    psp.pfnCallback = [](HWND hwnd, UINT msg, LPPROPSHEETPAGE ppsp) -> UINT
-    {
-      const auto object = (PropPage*)ppsp->lParam;
-      UINT ret = 1;
-
-      static const char* const msgname[] = { "ADDREF", "RELEASE", "CREATE" };
-      DebugMsg("%s %p object %p ppsp %p\n", msgname[msg], hwnd, object, ppsp->lParam);
-
-      switch (msg)
-      {
-      case PSPCB_ADDREF:
-        object->AddRef(hwnd, ppsp);
-        break;
-      case PSPCB_RELEASE:
-        object->Release(hwnd, ppsp);
-        break;
-      case PSPCB_CREATE:
-        ret = object->Create(hwnd, ppsp);
-        break;
-      default:
-        break;
-      }
-
-      return ret;
-    };
-
-    psp.lParam = (LPARAM)object;
-
-    const auto page = CreatePropertySheetPage(&psp);
-
-    if (!page)
-      delete object;
-
-    return page;
-  }
+  inline HINSTANCE GetInstance() { return (HINSTANCE)&__ImageBase; }
 
   template <typename Char>
-  Char hex(std::uint8_t n)
+  Char hex(uint8_t n, bool upper = true)
   {
     if (n < 0xA)
       return Char('0') + n;
-    return Char('A') + (n - 0xA);
+    return Char(upper ? 'A' : 'a') + (n - 0xA);
   };
 
   template <typename Char>
-  std::uint8_t unhex(Char ch)
+  uint8_t unhex(Char ch)
   {
     if (ch >= 0x80 || ch <= 0)
       return 0xFF;
@@ -156,93 +66,139 @@ namespace utl
   };
 
   template <typename Char>
-  void HashBytesToString(Char* str, const std::vector<std::uint8_t>& hash)
+  void HashBytesToString(Char* str, const std::vector<uint8_t>& hash, bool upper = true)
   {
     for (auto b : hash)
     {
-      *str++ = utl::hex<Char>(b >> 4);
-      *str++ = utl::hex<Char>(b & 0xF);
+      *str++ = utl::hex<Char>(b >> 4, upper);
+      *str++ = utl::hex<Char>(b & 0xF, upper);
     }
     *str = Char(0);
   }
 
   template <typename Char>
-  std::vector<std::uint8_t> HashStringToBytes(Char* str)
+  std::vector<uint8_t> HashStringToBytes(std::basic_string_view<Char> str)
   {
-    auto it = str;
-    do
-      if (const auto c = *it; !c || utl::unhex<Char>(c) != 0xFF)
-        break;
-    while (++it);
+    if (str.size() % 2 != 0)
+      return {}; // odd
 
-    std::vector<std::uint8_t> res;
+    std::vector<uint8_t> res;
 
-    uint8_t byte = 0;
-    for (auto i = 0; it[i]; ++i)
-      if (const auto nibble = utl::unhex<Char>(it[i]); nibble == 0xFF)
-        if (i % 2 == 0)
-          break;
-        else
-          return {};
-      else
-        if (i % 2 == 0)
-          byte = nibble << 4;
-        else
-          res.push_back(byte | nibble);
-
+    for (size_t i = 0u; i < str.size() / 2; ++i)
+    {
+      const auto a = utl::unhex<Char>(str[i * 2]);
+      const auto b = utl::unhex<Char>(str[i * 2 + 1]);
+      if (a == 0xFF || b == 0xFF)
+        return {}; // invalid
+      res.push_back(a << 4 | b);
+    }
     return res;
   }
 
-  inline int FormattedMessageBox(HWND hwnd, LPCTSTR caption, UINT type, LPCTSTR fmt, ...)
+  std::vector<uint8_t> FindHashInString(std::wstring_view wv);
+
+  template <typename Char>
+  auto FormatStringV(_In_z_ _Printf_format_string_ const Char* fmt, va_list va) -> std::basic_string<Char>
+  {
+    using cfn_t = int(*)(const Char*, va_list);
+    using fn_t = int(*)(Char*, size_t, const Char*, va_list);
+    cfn_t cfn;
+    fn_t fn;
+    if constexpr (std::is_same_v<Char, char>)
+    {
+      cfn = &_vscprintf;
+      fn = &vsprintf_s;
+    }
+    else
+    {
+      cfn = &_vscwprintf;
+      fn = &vswprintf_s;
+    }
+
+    std::basic_string<Char> str;
+
+    int len = cfn(fmt, va);
+    str.resize(len);
+    fn(str.data(), str.size() + 1, fmt, va);
+
+    return str;
+  }
+
+  template <typename Char>
+  auto FormatString(_In_z_ _Printf_format_string_ const Char* fmt, ...) -> std::basic_string<Char>
   {
     va_list args;
     va_start(args, fmt);
-    TCHAR text[4096];
-    _vstprintf_s(text, fmt, args);
+    auto str = FormatStringV(fmt, args);
     va_end(args);
-    return MessageBox(hwnd, text, caption, type);
+    return str;
   }
 
-  inline tstring GetString(UINT uID)
-  {
-    PCTSTR v = nullptr;
-    const auto len = LoadString((HINSTANCE)&__ImageBase, uID, (LPTSTR)&v, 0);
-    return {v, v + len};
-  }
+  int FormattedMessageBox(HWND hwnd, LPCWSTR caption, UINT type, _In_z_ _Printf_format_string_ LPCWSTR fmt, ...);
 
-  inline tstring GetWindowTextString(HWND hwnd)
-  {
-    SetLastError(0);
-    // GetWindowTextLength may return more than actual length, so we can't use a tstring directly
-    const auto len = GetWindowTextLength(hwnd);
-    // if text is 0 long, GetWindowTextLength returns 0, same as when error happened
-    if (len == 0 && GetLastError() != 0)
-      return {};
-    const auto p = std::make_unique<TCHAR[]>(len + 1);
-    GetWindowText(hwnd, p.get(), len + 1);
-    return { p.get() };
-  }
+  std::wstring GetString(UINT id);
+
+  std::wstring GetWindowTextString(HWND hwnd);
+
+  void SetWindowTextStringFromTable(HWND hwnd, UINT id);
+
+  long FloorIconSize(long size);
+
+  HICON SetIconButton(HWND button, int resource);
 
   bool AreFilesTheSame(HANDLE a, HANDLE b);
 
-  tstring MakePathLongCompatible(const tstring& file);
+  std::wstring MakePathLongCompatible(std::wstring file);
 
-  tstring CanonicalizePath(const tstring& path);
+  HANDLE OpenForRead(const std::wstring& file, bool async = false);
 
-  HANDLE OpenForRead(const tstring& file, bool async = false);
+  DWORD SetClipboardText(HWND hwnd, std::wstring_view text);
 
-  DWORD SetClipboardText(HWND hwnd, LPCTSTR text);
+  std::wstring GetClipboardText(HWND hwnd);
 
-  tstring GetClipboardText(HWND hwnd);
+  std::wstring SaveDialog(HWND hwnd, const wchar_t* defpath, const wchar_t* defname);
 
-  tstring SaveDialog(HWND hwnd, LPCTSTR defpath, LPCTSTR defname);
+  DWORD SaveMemoryAsFile(const wchar_t* path, const void* p, DWORD size);
 
-  DWORD SaveMemoryAsFile(LPCTSTR path, const void* p, size_t size);
+  std::wstring UTF8ToWide(const char* p);
+  std::string WideToUTF8(const wchar_t* p);
 
-  tstring UTF8ToTString(const char* p);
-  std::string TStringToUTF8(LPCTSTR p);
+  std::wstring ErrorToString(DWORD error);
 
-  tstring ErrorToString(DWORD error);
+  std::pair<const char*, size_t> GetResource(LPCWSTR name, LPCWSTR type);
+
+  struct FontDeleter
+  {
+    void operator()(HFONT hfont) const { if(hfont) DeleteFont(hfont); }
+  };
+
+  using UniqueFont = std::unique_ptr<std::remove_pointer_t<HFONT>, FontDeleter>;
+
+  UniqueFont GetDPIScaledFont();
+
+  void SetFontForChildren(HWND hwnd, HFONT font);
+
+  int GetDPIScaledPixels(HWND hwnd, int px);
+
+  struct Version
+  {
+    uint16_t major{};
+    uint16_t minor{};
+    uint16_t patch{};
+
+    constexpr Version(uint16_t major, uint16_t minor, uint16_t patch)
+      : major(major)
+      , minor(minor)
+      , patch(patch) {}
+
+    constexpr Version() = default;
+
+    constexpr uint64_t AsNumber() const { return ((uint64_t)major << 32) | ((uint64_t)minor << 16) | patch; }
+
+    constexpr bool operator==(const Version& rhs) const { return AsNumber() == rhs.AsNumber(); }
+    constexpr bool operator<(const Version& rhs) const { return AsNumber() < rhs.AsNumber(); }
+    constexpr bool operator>(const Version& rhs) const { return AsNumber() > rhs.AsNumber(); }
+  };
+
+  Version GetLatestVersion();
 }
-
-#define MAKE_IDC_MEMBER(hwnd, name) HWND _hwnd_ ## name = GetDlgItem(hwnd, IDC_ ## name);

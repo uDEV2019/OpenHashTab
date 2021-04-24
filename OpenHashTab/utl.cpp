@@ -1,4 +1,4 @@
-//    Copyright 2019-2020 namazso <admin@namazso.eu>
+//    Copyright 2019-2021 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -17,30 +17,108 @@
 
 #include "utl.h"
 
+#include <memory>
+#include <regex>
+
+std::vector<uint8_t> utl::FindHashInString(std::wstring_view wv)
+{
+  using wvmatch = std::match_results<std::wstring_view::iterator>;
+  constexpr static wchar_t regex_str[] = LR"([^\u0080-\uFFFFa-zA-Z0-9]*((?:[0-9a-fA-F]{2})+)([^\u0080-\uFFFFa-zA-Z0-9].*)?)";
+  static std::wregex regex{ regex_str };
+
+  wvmatch pieces;
+  if (std::regex_match(begin(wv), end(wv), pieces, regex))
+    return HashStringToBytes(std::wstring_view{ pieces[1].str() });
+  return {};
+}
+
+int utl::FormattedMessageBox(HWND hwnd, LPCWSTR caption, UINT type, LPCWSTR fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+  const auto str = FormatStringV(fmt, args);
+  va_end(args);
+  return MessageBoxW(hwnd, str.c_str(), caption, type);
+}
+
+std::wstring utl::GetString(UINT id)
+{
+  LPCWSTR v = nullptr;
+  const auto len = LoadStringW(GetInstance(), id, reinterpret_cast<LPWSTR>(&v), 0);
+  return {v, v + len};
+}
+
+std::wstring utl::GetWindowTextString(HWND hwnd)
+{
+  SetLastError(0);
+  // GetWindowTextLength may return more than actual length, so we can't use a std::wstring directly
+  const auto len = GetWindowTextLengthW(hwnd);
+  // if text is 0 long, GetWindowTextLength returns 0, same as when error happened
+  if (len == 0 && GetLastError() != 0)
+    return {};
+  const auto p = std::make_unique<wchar_t[]>(len + 1);
+  GetWindowTextW(hwnd, p.get(), len + 1);
+  return {p.get()};
+}
+
+void utl::SetWindowTextStringFromTable(HWND hwnd, UINT id)
+{
+  SetWindowTextW(hwnd, utl::GetString(id).c_str());
+}
+
+long utl::FloorIconSize(long size)
+{
+  constexpr static long icon_sizes[] = { 256, 192, 128, 96, 64, 48, 40, 32, 24, 16 };
+  for (auto v : icon_sizes)
+    if (size >= v)
+    {
+      size = v;
+      break;
+    }
+  return size;
+}
+
+HICON utl::SetIconButton(HWND button, int resource)
+{
+  RECT rect{};
+  GetWindowRect(button, &rect);
+  const auto max_raw = std::min(rect.right - rect.left, rect.bottom - rect.top);
+  const auto max = FloorIconSize(max_raw * 3 / 4);
+
+  const auto icon = LoadImageW(
+    GetInstance(),
+    MAKEINTRESOURCEW(resource),
+    IMAGE_ICON,
+    max,
+    max,
+    LR_DEFAULTCOLOR
+  );
+
+  SendMessageW(button, BM_SETIMAGE, (WPARAM)IMAGE_ICON, (LPARAM)icon);
+  return (HICON)icon;
+}
+
 bool utl::AreFilesTheSame(HANDLE a, HANDLE b)
 {
-  if (IsWindows8OrGreater())
+  if (const auto kernel32 = GetModuleHandleW(L"kernel32"))
   {
-    if (const auto kernel32 = GetModuleHandle(_T("kernel32")))
+    using fn_t = decltype(GetFileInformationByHandleEx);
+    if (const auto pfn = reinterpret_cast<fn_t*>(GetProcAddress(kernel32, "GetFileInformationByHandleEx")))
     {
-      using fn_t = decltype(GetFileInformationByHandleEx);
-      if (const auto pfn = (fn_t*)GetProcAddress(kernel32, "GetFileInformationByHandleEx"))
+      struct xFILE_ID_INFO {
+        ULONGLONG VolumeSerialNumber;
+        FILE_ID_128 FileId;
+      };
+      constexpr static auto FileIdInfo = static_cast<FILE_INFO_BY_HANDLE_CLASS>(18);
+
+      xFILE_ID_INFO fiia{}, fiib{};
+
+      if (pfn(a, FileIdInfo, &fiia, sizeof(fiia)) && pfn(b, FileIdInfo, &fiib, sizeof(fiib)))
       {
-        typedef struct _FILE_ID_INFO {
-          ULONGLONG VolumeSerialNumber;
-          FILE_ID_128 FileId;
-        } FILE_ID_INFO, * PFILE_ID_INFO;
-        constexpr static auto FileIdInfo = (FILE_INFO_BY_HANDLE_CLASS)18;
-
-        FILE_ID_INFO fiia, fiib;
-
-        if(pfn(a, FileIdInfo, &fiia, sizeof(fiia)) && pfn(b, FileIdInfo, &fiib, sizeof(fiib)))
-        {
-          const auto& ida = fiia.FileId.Identifier;
-          const auto& idb = fiib.FileId.Identifier;
-          return fiia.VolumeSerialNumber == fiib.VolumeSerialNumber
-            && std::equal(std::begin(ida), std::end(ida), std::begin(idb));
-        }
+        const auto& ida = fiia.FileId.Identifier;
+        const auto& idb = fiib.FileId.Identifier;
+        return fiia.VolumeSerialNumber == fiib.VolumeSerialNumber
+          && std::equal(std::begin(ida), std::end(ida), std::begin(idb));
       }
     }
   }
@@ -54,64 +132,19 @@ bool utl::AreFilesTheSame(HANDLE a, HANDLE b)
     && fia.nFileIndexHigh == fib.nFileIndexHigh;
 }
 
-tstring utl::MakePathLongCompatible(const tstring& file)
+std::wstring utl::MakePathLongCompatible(std::wstring file)
 {
-#ifdef UNICODE
-  constexpr static TCHAR prefix[] = _T("\\\\?\\");
+  constexpr static wchar_t prefix[] = L"\\\\";
   constexpr static auto prefixlen = std::size(prefix) - 1;
   const auto file_cstr = file.c_str();
-  if (file.size() < prefixlen || 0 != _tcsncmp(file_cstr, prefix, prefixlen))
-    return tstring{ prefix } + file;
-#endif
+  if (file.size() < prefixlen || 0 != wcsncmp(file_cstr, prefix, prefixlen))
+    file.insert(0, L"\\\\?\\");
   return file;
 }
 
-tstring utl::CanonicalizePath(const tstring& path)
+HANDLE utl::OpenForRead(const std::wstring& file, bool async)
 {
-  // PathCanonicalize doesn't support long paths, and pathcch.h isn't backward compatible, PathCch*
-  // functions are only available on Windows 8+, so since I really don't feel like reimplementing it
-  // myself long paths are only supported on Windows 8+
-
-#ifdef UNICODE
-
-  using tPathAllocCanonicalize = decltype(&PathAllocCanonicalize);
-  static const auto pPathAllocCanonicalize = []
-  {
-    if (const auto kernelbase = GetModuleHandle(_T("kernelbase")))
-      if (const auto fn = GetProcAddress(kernelbase, "PathAllocCanonicalize"))
-        return (tPathAllocCanonicalize)fn;
-    return (tPathAllocCanonicalize)nullptr;
-  } ();
-
-  if (pPathAllocCanonicalize)
-  {
-    PWSTR outpath;
-    const auto ret = pPathAllocCanonicalize(
-      (PCWSTR)path.c_str(), // cast needed for non-UNICODE, where this will never run
-      PATHCCH_ALLOW_LONG_PATHS | PATHCCH_FORCE_ENABLE_LONG_NAME_PROCESS,
-      &outpath
-    );
-    if (ret == S_OK)
-    {
-      const auto result = tstring{ (PCTSTR)outpath };
-      LocalFree(outpath);
-      return result;
-    }
-
-    // fall through if PathAllocCanonicalize didn't work out
-  }
-
-#endif
-
-  TCHAR canonical[MAX_PATH + 1];
-  if(PathCanonicalize(canonical, path.c_str()))
-    return { canonical };
-  return {};
-}
-
-HANDLE utl::OpenForRead(const tstring& file, bool async)
-{
-  return CreateFile(
+  return CreateFileW(
     MakePathLongCompatible(file).c_str(),
     GENERIC_READ,
     FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
@@ -122,24 +155,25 @@ HANDLE utl::OpenForRead(const tstring& file, bool async)
   );
 }
 
-DWORD utl::SetClipboardText(HWND hwnd, LPCTSTR text)
+DWORD utl::SetClipboardText(HWND hwnd, std::wstring_view text)
 {
-  DWORD error = ERROR_SUCCESS;
+  DWORD error;
 
   if (OpenClipboard(hwnd))
   {
     EmptyClipboard();
 
-    const auto len = _tcslen(text);
+    const auto len = text.length();
 
-    if (const auto cb = GlobalAlloc(GMEM_MOVEABLE, (len + 1) * sizeof(TCHAR)))
+    if (const auto cb = GlobalAlloc(GMEM_MOVEABLE, (len + 1) * sizeof(wchar_t)))
     {
       // Lock the handle and copy the text to the buffer. 
-      if (const auto lcb = (LPTSTR)GlobalLock(cb))
+      if (const auto lcb = static_cast<LPWSTR>(GlobalLock(cb)))
       {
-        memcpy(lcb, text, (len + 1) * sizeof(TCHAR));
+        memcpy(lcb, text.data(), (len + 1) * sizeof(wchar_t));
+        lcb[len] = 0;
         const auto ref = GlobalUnlock(cb);
-        error          = GetLastError();
+        error = GetLastError();
         if (ref != 0 || error == ERROR_SUCCESS)
         {
           // Place the handle on the clipboard.
@@ -161,19 +195,19 @@ DWORD utl::SetClipboardText(HWND hwnd, LPCTSTR text)
   return error;
 }
 
-tstring utl::GetClipboardText(HWND hwnd)
+std::wstring utl::GetClipboardText(HWND hwnd)
 {
-  tstring tstr;
+  std::wstring wstr;
   if (OpenClipboard(hwnd))
   {
     const auto hglb = GetClipboardData(CF_UNICODETEXT);
     if(hglb)
     {
-      const auto text = (PCTSTR)GlobalLock(hglb);
+      const auto text = static_cast<LPCWSTR>(GlobalLock(hglb));
 
       if(text)
       {
-        tstr = text;
+        wstr = text;
         GlobalUnlock(hglb);
       }
     }
@@ -181,39 +215,41 @@ tstring utl::GetClipboardText(HWND hwnd)
     CloseClipboard();
   }
 
-  return tstr;
+  return wstr;
 }
 
-tstring utl::SaveDialog(HWND hwnd, LPCTSTR defpath, LPCTSTR defname)
+std::wstring utl::SaveDialog(HWND hwnd, const wchar_t* defpath, const wchar_t* defname)
 {
-  TCHAR name[PATHCCH_MAX_CCH];
-  _tcscpy_s(name, defname);
+  wchar_t name[PATHCCH_MAX_CCH];
+  wcscpy_s(name, defname);
 
   OPENFILENAME of = { sizeof(OPENFILENAME), hwnd };
   of.lpstrFile = name;
-  of.nMaxFile = (DWORD)std::size(name);
+  of.nMaxFile = static_cast<DWORD>(std::size(name));
   of.lpstrInitialDir = defpath;
   of.Flags = OFN_EXPLORER | OFN_OVERWRITEPROMPT;
-  if (!GetSaveFileName(&of))
+  if (!GetSaveFileNameW(&of))
   {
     const auto error = CommDlgExtendedError();
     // if error is 0 the user just cancelled the action
     if (error)
-      utl::FormattedMessageBox(
+      FormattedMessageBox(
         hwnd,
-        _T("Error"),
+        L"Error",
         MB_ICONERROR | MB_OK,
-        _T("GetSaveFileName returned with error: %08X"),
+        L"GetSaveFileName returned with error: %08X",
         error
       );
     return {};
   }
+  // Compiler keeps crying about it even though it's impossible
+  name[std::size(name) - 1] = 0;
   return { name };
 }
 
-DWORD utl::SaveMemoryAsFile(LPCTSTR path, const void* p, size_t size)
+DWORD utl::SaveMemoryAsFile(const wchar_t* path, const void* p, DWORD size)
 {
-  const auto h = CreateFile(
+  const auto h = CreateFileW(
     MakePathLongCompatible(path).c_str(),
     GENERIC_WRITE,
     0,
@@ -232,16 +268,15 @@ DWORD utl::SaveMemoryAsFile(LPCTSTR path, const void* p, size_t size)
   }
 
   DWORD written = 0;
-  if (!WriteFile(h, p, (DWORD)size, &written, nullptr))
+  if (!WriteFile(h, p, size, &written, nullptr))
     error = GetLastError();
 
   CloseHandle(h);
   return error;
 }
 
-tstring utl::UTF8ToTString(const char* p)
+std::wstring utl::UTF8ToWide(const char* p)
 {
-#ifdef UNICODE
   const auto wsize = MultiByteToWideChar(
     CP_UTF8,
     0,
@@ -265,14 +300,10 @@ tstring utl::UTF8ToTString(const char* p)
   );
 
   return wstr;
-#else
-  return { p };
-#endif
 }
 
-std::string utl::TStringToUTF8(LPCTSTR p)
+std::string utl::WideToUTF8(const wchar_t* p)
 {
-#ifdef UNICODE
   const auto size = WideCharToMultiByte(
     CP_UTF8,
     0,
@@ -300,27 +331,67 @@ std::string utl::TStringToUTF8(LPCTSTR p)
   );
 
   return str;
-#else
-  return { p };
-#endif
 }
 
-tstring utl::ErrorToString(DWORD error)
+std::wstring utl::ErrorToString(DWORD error)
 {
-  TCHAR buf[0x1000];
+  std::wstring wstr{};
 
-  FormatMessage(
+  // FormatMessageW: "This buffer cannot be larger than 64K bytes."
+  wstr.resize(64 * 1024 / sizeof(wchar_t));
+
+  const auto size = FormatMessageW(
     FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
     nullptr,
     error,
     MAKELANGID(LANG_USER_DEFAULT, SUBLANG_DEFAULT),
-    buf,
-    (DWORD)std::size(buf),
+    wstr.data(),
+    static_cast<DWORD>(wstr.size()),
     nullptr
   );
-  tstring tstr{ buf };
-  const auto pos = tstr.find_last_not_of(_T("\r\n"));
-  if (pos != tstring::npos)
-    tstr.resize(pos);
-  return tstr;
+  wstr.resize(size);
+  const auto pos = wstr.find_last_not_of(L"\r\n");
+  if (pos != std::wstring::npos)
+    wstr.resize(pos);
+  return wstr;
+}
+
+std::pair<const char*, size_t> utl::GetResource(LPCWSTR name, LPCWSTR type)
+{
+  const auto rc = FindResourceW(
+    GetInstance(),
+    name,
+    type
+  );
+  const auto rc_data = LoadResource(GetInstance(), rc);
+  const auto size = SizeofResource(GetInstance(), rc);
+  const auto data = static_cast<const char*>(LockResource(rc_data));
+  return { data, size };
+}
+
+utl::UniqueFont utl::GetDPIScaledFont()
+{
+  NONCLIENTMETRICS ncm;
+  ncm.cbSize = sizeof(ncm);
+  SystemParametersInfoW(
+    SPI_GETNONCLIENTMETRICS,
+    0,
+    &ncm,
+    0
+  );
+  return { CreateFontIndirectW(&ncm.lfStatusFont), {} };
+}
+
+void utl::SetFontForChildren(HWND hwnd, HFONT font)
+{
+  for (auto wnd = GetWindow(hwnd, GW_CHILD); wnd; wnd = GetWindow(wnd, GW_HWNDNEXT))
+    SetWindowFont(wnd, font, TRUE);
+}
+
+int utl::GetDPIScaledPixels(HWND hwnd, int px)
+{
+  const auto hdc = GetDC(hwnd);
+  const auto ret = MulDiv(px, GetDeviceCaps(hdc, LOGPIXELSY), 96);
+  ReleaseDC(hwnd, hdc);
+  return ret;
 }
