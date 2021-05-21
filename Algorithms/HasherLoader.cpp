@@ -16,6 +16,9 @@
 #include "Hasher.h"
 
 #include <Windows.h>
+#if defined(_M_IX86) ||  defined(_M_X64)
+#include <immintrin.h>
+#endif
 
 enum : uint32_t {
   SSE2_CPUID_MASK       = 1u << 26,
@@ -45,7 +48,9 @@ enum CPUFeatureLevel
 static CPUFeatureLevel get_cpu_level()
 {
   auto best = CPU_None;
-#if defined(_M_IX86) || defined(_M_X64)
+#if defined(_M_IX86)
+  best = CPU_SSE2;
+#elif defined(_M_X64)
   int abcd[4];
   // Check how many CPUID pages we have
   __cpuidex(abcd, 0, 0);
