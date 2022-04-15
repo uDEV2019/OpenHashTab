@@ -1,4 +1,4 @@
-//    Copyright 2019-2021 namazso <admin@namazso.eu>
+//    Copyright 2019-2022 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -78,7 +78,7 @@ INT_PTR SettingsDialog::DlgProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
     const auto list = _hwnd_ALGORITHM_LIST;
     ListView_SetExtendedListViewStyleEx(list, LVS_EX_CHECKBOXES, LVS_EX_CHECKBOXES);
     auto width = 0;
-    for (const auto& algorithm : HashAlgorithm::Algorithms())
+    for (const auto& algorithm : LegacyHashAlgorithm::Algorithms())
     {
       const auto name = utl::UTF8ToWide(algorithm.GetName());
       width = std::max(width, ListView_GetStringWidth(list, name.c_str()));
@@ -190,7 +190,7 @@ INT_PTR SettingsDialog::DlgProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
         static_cast<int>(idx)
       };
       ListView_GetItem(list, &lvitem);
-      const auto algorithm = reinterpret_cast<const HashAlgorithm*>(lvitem.lParam);
+      const auto algorithm = reinterpret_cast<const LegacyHashAlgorithm*>(lvitem.lParam);
       _settings->algorithms[algorithm->Idx()].Set(check);
       return TRUE;
     }

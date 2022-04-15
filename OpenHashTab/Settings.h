@@ -1,4 +1,4 @@
-//    Copyright 2019-2021 namazso <admin@namazso.eu>
+//    Copyright 2019-2022 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -14,7 +14,7 @@
 //    You should have received a copy of the GNU General Public License
 //    along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
 #pragma once
-#include "../Algorithms/Hasher.h"
+#include "../AlgorithmsLoader/Hasher.h"
 
 namespace detail
 {
@@ -72,7 +72,7 @@ struct Settings
 {
   Settings();
 
-  RegistrySetting<bool> algorithms[HashAlgorithm::k_count]{};
+  RegistrySetting<bool> algorithms[LegacyHashAlgorithm::k_count]{};
 
   RegistrySetting<bool> display_uppercase{ "DisplayUppercase", true };
   RegistrySetting<bool> look_for_sumfiles{ "LookForSumfiles", false };

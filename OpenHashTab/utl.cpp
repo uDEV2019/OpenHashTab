@@ -1,4 +1,4 @@
-//    Copyright 2019-2021 namazso <admin@namazso.eu>
+//    Copyright 2019-2022 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -19,6 +19,19 @@
 
 #include <memory>
 #include <regex>
+
+#include "Settings.h"
+
+extern "C" NTSTATUS NTAPI RtlLoadString(
+  HINSTANCE ImageBase,
+  USHORT StringId,
+  ULONG LangId,
+  ULONG Flags,
+  PCWCH* OutPtr,
+  PUSHORT OutCch,
+  void* unk1,
+  void* unk2
+);
 
 std::vector<uint8_t> utl::FindHashInString(std::wstring_view wv)
 {
@@ -43,8 +56,37 @@ int utl::FormattedMessageBox(HWND hwnd, LPCWSTR caption, UINT type, _In_z_ _Prin
 
 std::wstring utl::GetString(UINT id)
 {
-  LPCWSTR v = nullptr;
-  const auto len = LoadStringW(GetInstance(), id, reinterpret_cast<LPWSTR>(&v), 0);
+  static ULONG langid_override{};
+  static decltype(&RtlLoadString) pRtlLoadString{};
+  static bool once = false;
+  if (!once)
+  {
+    langid_override = detail::GetSettingDWORD("LangIdOverride", 0);
+    const auto ntdll = GetModuleHandleW(L"ntdll");
+    if (ntdll)
+      pRtlLoadString = (decltype(&RtlLoadString))GetProcAddress(ntdll, "RtlLoadString");
+    once = true;
+  }
+  PCWCH v{};
+  USHORT len{};
+  if (pRtlLoadString)
+    pRtlLoadString(
+      GetInstance(),
+      (USHORT)id,
+      langid_override,
+      0,
+      &v,
+      &len,
+      nullptr,
+      nullptr
+    );
+  else
+    len = (USHORT)LoadStringW(
+      GetInstance(),
+      id,
+      reinterpret_cast<LPWSTR>(&v),
+      0
+    );
   return {v, v + len};
 }
 

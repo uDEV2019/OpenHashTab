@@ -1,5 +1,5 @@
 OpenHashTab - File hashing shell extension
-Copyright 2019-2021 namazso <admin@namazso.eu>
+Copyright 2019-2022 namazso <admin@namazso.eu>
 Licensed under GPLv3 or later.
 Code available at https://github.com/namazso/OpenHashTab
 
@@ -18,8 +18,7 @@ blake2sp implementation (public domain):
 
 crc32 implementation (zlib license):
 Copyright (c) 2011-2016 Stephan Brumme
-Modified by namazso for Windows/ARM64 compatibility.
-https://github.com/namazso/crc32
+https://github.com/stbrumme/crc32
 
 crc64 implementation (public domain):
 by duk

@@ -24,7 +24,7 @@ OpenHashTab is a shell extension for conveniently calculating and checking file 
 
 ## System requirements
 
-* Windows Vista or later (x86 / x64 / ARM64)
+* Windows 7 or later (x86 / x64 / ARM64)
 * 1 GB RAM or more (for efficent hashing of more than 512 files at a time)
 
 ## Usage
@@ -90,7 +90,7 @@ In addition to contributors reported by git, some translations were also contrib
 ### Requirements
 
 * WSL Alpine with make and libxslt
-* Visual Studio 2019 16.8+ (with ARM64 and clang-cl)
+* Visual Studio 2022 (with ARM64 and clang-cl)
 * [InnoSetup](http://www.jrsoftware.org/isinfo.php)
 
 ### Compiling
@@ -110,7 +110,7 @@ HashTab is a similar purpose proprietary software. While this software has been 
 
 All original code in this repo are licensed under the following license, unless explicitly stated otherwise in the file:
 
-	Copyright 2019-2021 namazso <admin@namazso.eu>
+	Copyright 2019-2022 namazso <admin@namazso.eu>
 	OpenHashTab - File hashing shell extension
 	
 	OpenHashTab is free software: you can redistribute it and/or modify
