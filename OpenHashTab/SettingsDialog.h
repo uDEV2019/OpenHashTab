@@ -16,6 +16,7 @@
 #pragma once
 
 #include "wnd.h"
+#include "hash_colors.h"
 
 struct Settings;
 
@@ -33,14 +34,23 @@ class SettingsDialog
   MAKE_IDC_MEMBER(_hwnd, CHECK_CLIPBOARD_AUTOENABLE_IF_NONE);
   MAKE_IDC_MEMBER(_hwnd, CHECK_CLIPBOARD_AUTOENABLE_EXCLUSIVE);
 
+  MAKE_IDC_MEMBER(_hwnd, PROJECT_NAME);
+
+  HWND _samples[std::size(HASH_COLOR_SETTING_MAP)]{};
+
   Settings* _settings;
   utl::UniqueFont _font{ utl::GetDPIScaledFont() };
   bool _done_setup = false;
 
   void UpdateCheckboxAvailability();
+  void UpdateColorItems();
 
 public:
-  SettingsDialog(HWND handle, void* settings) : _hwnd(handle), _settings((Settings*)settings) {}
+  SettingsDialog(HWND handle, void* settings) : _hwnd(handle), _settings((Settings*)settings)
+  {
+    for (size_t i = 0; i < std::size(HASH_COLOR_SETTING_MAP); ++i)
+      _samples[i] = GetDlgItem(_hwnd, HASH_COLOR_SETTING_MAP[i].settings_dlg_sample);
+  }
 
   INT_PTR DlgProc(UINT uMsg, WPARAM wParam, LPARAM lParam);
 };

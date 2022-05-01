@@ -25,47 +25,25 @@
 #include "FileHashTask.h"
 #include "wnd.h"
 #include "virustotal.h"
+#include "hash_colors.h"
 
 #include <sstream>
 
-enum class HashColorType
+static bool ColorLine(const Settings& settings, LPNMLVCUSTOMDRAW plvcd, HashColorType type)
 {
-  Error,
-  Match,
-  Insecure,
-  Mismatch,
-  Unknown
-};
-
-static bool ColorLine(LPNMLVCUSTOMDRAW plvcd, HashColorType type)
-{
-  // No hash to compare to  - system colors
-  // Error processing file  - system bg, red text
-  // Hash mismatch          - red bg, white text for all algos
-  // Secure hash matches    - green bg, white text for algo matching
-  // Insecure hash matches  - orange bg, white text for algo matching
-  
-  switch(type)
+  auto& entry = HASH_COLOR_SETTING_MAP[(size_t)type];
+  bool was_set = false;
+  if (settings.*entry.fg_enabled)
   {
-  case HashColorType::Unknown:
-    return false;
-  case HashColorType::Error:
-    plvcd->clrText = RGB(255, 55, 23);
-    break;
-  case HashColorType::Match:
-    plvcd->clrText = RGB(255, 255, 255);
-    plvcd->clrTextBk = RGB(45, 170, 23);
-    break;
-  case HashColorType::Insecure:
-    plvcd->clrText = RGB(255, 255, 255);
-    plvcd->clrTextBk = RGB(170, 82, 23);
-    break;
-  case HashColorType::Mismatch:
-    plvcd->clrText = RGB(255, 255, 255);
-    plvcd->clrTextBk = RGB(230, 55, 23);
-    break;
+    was_set = true;
+    plvcd->clrText = settings.*entry.fg_color;
   }
-  return true;
+  if (settings.*entry.bg_enabled)
+  {
+    was_set = true;
+    plvcd->clrTextBk = settings.*entry.bg_color;
+  }
+  return was_set;
 }
 
 static HashColorType HashColorTypeForFile(FileHashTask* file, size_t hasher)
@@ -103,10 +81,10 @@ static const Exporter* GetSelectedExporter(HWND combo)
 
 static std::wstring ListView_GetItemTextStr(HWND hwnd, int item, int subitem)
 {
-  wchar_t name[PATHCCH_MAX_CCH];
-  name[0] = 0;
-  ListView_GetItemText(hwnd, item, subitem, name, std::size(name));
-  return name;
+  const auto pbuf = std::make_unique<wchar_t[]>(PATHCCH_MAX_CCH);
+  pbuf[0] = 0;
+  ListView_GetItemText(hwnd, item, subitem, pbuf.get(), PATHCCH_MAX_CCH);
+  return pbuf.get();
 }
 
 static std::pair<FileHashTask*, size_t> TaskAlgPairFromLVIndex(HWND list_view, int index)
@@ -172,16 +150,23 @@ INT_PTR MainDialog::CustomDrawListView(LPARAM lparam, HWND list)
       const auto file = file_hash.first;
       const auto hasher = file_hash.second;
       const auto color_type = HashColorTypeForFile(file, hasher);
-      if(ColorLine(lplvcd, color_type))
+
+      // this is horrible
+      const auto dlg = (MainDialog*)GetWindowLongPtrW(GetParent(lplvcd->nmcd.hdr.hwndFrom), GWLP_USERDATA);
+
+      if(ColorLine(dlg->_prop_page->settings, lplvcd, color_type))
         return CDRF_NEWFONT;
 
       // fall through for normal color
     }
+    [[fallthrough]];
     default:
       break;
     }
 
+    return CDRF_DODEFAULT;
   }
+
   default:
     break;
   }
@@ -533,7 +518,10 @@ INT_PTR MainDialog::OnAllFilesFinished(UINT, WPARAM, LPARAM)
   Button_Enable(_hwnd_BUTTON_SETTINGS, true);
   Button_Enable(_hwnd_BUTTON_EXPORT, true);
   Button_Enable(_hwnd_BUTTON_CLIPBOARD, true);
-  Button_Enable(_hwnd_BUTTON_VT, true);
+
+  if (detail::GetMachineSettingDWORD("ForceDisableVT", 0) == 0)
+    Button_Enable(_hwnd_BUTTON_VT, true);
+
   Edit_Enable(_hwnd_EDIT_HASH, true);
 
   ShowWindow(_hwnd_PROGRESS, 0);

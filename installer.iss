@@ -50,6 +50,7 @@ WizardStyle=modern
 VersionInfoProductTextVersion={#CI_VERSION}
 VersionInfoVersion={#CI_VERSION_NUMERIC}
 ChangesAssociations = yes
+UninstallDisplayIcon={app}\OpenHashTab.dll,0
 
 [Languages]
 Name: "en"; MessagesFile: "compiler:Default.isl"
@@ -90,20 +91,18 @@ GroupDescription=Optional features:
 myAssociation=Associate with known sumfile formats
 myContextMenu=Add to context menu
 
-ChineseSimplified.GroupDescription=ø…—°≤Ÿ◊˜£∫
-ChineseSimplified.myAssociation=πÿ¡™“—÷™µƒ–£—È∫ÕŒƒº˛£®sumfile£©∏Ò Ω
-ChineseSimplified.myContextMenu=ÃÌº””“º¸≤Àµ•
+ChineseSimplified.GroupDescription=ÂèØÈÄâÊìç‰ΩúÔºö
+ChineseSimplified.myAssociation=ÂÖ≥ËÅîÂ∑≤Áü•ÁöÑÊ†°È™åÂíåÊñá‰ª∂ÔºàsumfileÔºâÊ†ºÂºè
+ChineseSimplified.myContextMenu=Ê∑ªÂä†Âè≥ÈîÆËèúÂçï
 
 [Tasks]
 Name: myAssociation; Description: "{cm:myAssociation}"; GroupDescription: "{cm:GroupDescription}"
 Name: myContextMenu; Description: "{cm:myContextMenu}"; GroupDescription: "{cm:GroupDescription}"
 
 [Registry]
-#ifdef SYSTEM
-Root: HKLM32; Subkey: "Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved";  ValueName: "{#DLLCLSID}"; ValueData: "{#MyAppName} Shell Extension";  ValueType: string; Check: InstallArch('x86')
-Root: HKLM64; Subkey: "Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved";  ValueName: "{#DLLCLSID}"; ValueData: "{#MyAppName} Shell Extension";  ValueType: string; Check: InstallArch('x64')
-Root: HKLM64; Subkey: "Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved";  ValueName: "{#DLLCLSID}"; ValueData: "{#MyAppName} Shell Extension";  ValueType: string; Check: InstallArch('arm64')
-#endif
+Root: HKLM32; Subkey: "Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved";  ValueName: "{#DLLCLSID}"; ValueData: "{#MyAppName} Shell Extension";  ValueType: string; Check: InstallArch('x86'); Flags: noerror
+Root: HKLM64; Subkey: "Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved";  ValueName: "{#DLLCLSID}"; ValueData: "{#MyAppName} Shell Extension";  ValueType: string; Check: InstallArch('x64'); Flags: noerror
+Root: HKLM64; Subkey: "Software\Microsoft\Windows\CurrentVersion\Shell Extensions\Approved";  ValueName: "{#DLLCLSID}"; ValueData: "{#MyAppName} Shell Extension";  ValueType: string; Check: InstallArch('arm64'); Flags: noerror
 
 Root: HKA32; Subkey: "Software\Classes\CLSID\{#DLLCLSID}";  ValueName: ""; ValueData: "{#MyAppName} Shell Extension";  ValueType: string; Flags: uninsdeletekey; Check: InstallArch('x86')
 Root: HKA32; Subkey: "Software\Classes\CLSID\{#DLLCLSID}\InprocServer32";  ValueName: ""; ValueData: "{app}\{#DLLName}"; ValueType: string; Check: InstallArch('x86')
