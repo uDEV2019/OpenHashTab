@@ -1,4 +1,4 @@
-//    Copyright 2019-2022 namazso <admin@namazso.eu>
+//    Copyright 2019-2023 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -141,7 +141,7 @@ public:
   size_t GetOutputSize() const { return _algorithm->_get_output_size_fn(_ctx); }
 };
 
-inline HashBox HashAlgorithm::MakeContext(const uint64_t* params) const
+inline HashBox HashAlgorithm::MakeContext(const uint64_t* params_) const
 {
-  return { *this, params };
+  return { *this, params_ };
 }

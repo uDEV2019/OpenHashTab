@@ -25,7 +25,7 @@ OpenHashTab is a shell extension for conveniently calculating and checking file 
 ## System requirements
 
 * Windows 7 or later (x86 / x64 / ARM64)
-* 1 GB RAM or more (for efficent hashing of more than 512 files at a time)
+* 1 GB RAM or more (for efficient hashing of more than 512 files at a time)
 
 ## Usage
 
@@ -36,7 +36,7 @@ Most of the actions should be obvious. Some not-so-obvious features are listed h
 * Double click name or algorithm to copy the line in sumfile format
 * Right click for popup menu: copy hash, copy filename, copy line, copy everything
 * The counters next to the status text is in the format `(match/mismatch/nothing to check against/error)`
-* Columns sort lexographically, except the hash column which sorts by match type
+* Columns sort lexicographically, except the hash column which sorts by match type
 * Selecting the tab on a sumfile will interpret it as such and hash the files listed in it.
 * If a hashed file has a sumfile with same filename plus one of the recognized sumfile extensions and the option for it is enabled, the file hash is checked against it.
 
@@ -76,7 +76,7 @@ Add a `DWORD` named `ForceDisableVT` to `HKEY_LOCAL_MACHINE\SOFTWARE\OpenHashTab
 
 ## Screenshot
 
-![Screenshot](resources/screenshot.png) ![Algorithms](resources/algorithms.png)
+![Screenshot](https://github.com/namazso/OpenHashTab/assets/8676443/727943b2-8070-4dcc-b0a4-e1149fca0245) ![Algorithms](https://github.com/namazso/OpenHashTab/assets/8676443/878c9b30-ed94-4d8b-9370-75b3be02e2cb)
 
 ## Donations
 
@@ -99,40 +99,40 @@ In addition to contributors reported by git, some translations were also contrib
 
 ### Requirements
 
-* WSL Alpine with make and libxslt
-* Visual Studio 2022 (with ARM64 and clang-cl)
-* [InnoSetup](http://www.jrsoftware.org/isinfo.php)
+* Visual Studio 2022 (with desktop C++, ARM64, clang-cl)
+* vswhere in PATH
+* CMake
+* InnoSetup
 
 ### Compiling
 
-1. Run build-xkcp.bat
-2. Build AlgorithmsDll.sln for all Release targets
-3. Build OpenHashTab.sln for all Release targets
-4. Use Inno Setup Compiler to compile installer.iss
+1. Run build_algorithms.ps1
+2. Run build_openhashtab.ps1
+3. Use Inno Setup Compiler to compile installer.iss
 
 More options and commands can be found in the [GitHub Actions workflow](.github/workflows/ci.yml)
 
 ## Relationship to HashTab
 
-HashTab is a similar purpose proprietary software. While this software has been inspired by it, I was never an user of HashTab and this software contains no code or resources related to it.
+HashTab was a similar purpose proprietary software. While this software has been inspired by it, I was never a user of HashTab and this software contains no code or resources related to it.
 
 ## License
 
 All original code in this repo are licensed under the following license, unless explicitly stated otherwise in the file:
 
-	Copyright 2019-2022 namazso <admin@namazso.eu>
+	Copyright 2019-2023 namazso <admin@namazso.eu>
 	OpenHashTab - File hashing shell extension
-	
+
 	OpenHashTab is free software: you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
 	the Free Software Foundation, either version 3 of the License, or
 	(at your option) any later version.
-	
+
 	OpenHashTab is distributed in the hope that it will be useful,
 	but WITHOUT ANY WARRANTY; without even the implied warranty of
 	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 	GNU General Public License for more details.
-	
+
 	You should have received a copy of the GNU General Public License
 	along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
 

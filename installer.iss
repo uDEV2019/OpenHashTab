@@ -1,16 +1,16 @@
-﻿; Copyright 2019-2022 namazso <admin@namazso.eu>
+﻿; Copyright 2019-2023 namazso <admin@namazso.eu>
 ; This file is part of OpenHashTab.
-; 
+;
 ; OpenHashTab is free software: you can redistribute it and/or modify
 ; it under the terms of the GNU General Public License as published by
 ; the Free Software Foundation, either version 3 of the License, or
 ; (at your option) any later version.
-; 
+;
 ; OpenHashTab is distributed in the hope that it will be useful,
 ; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ; GNU General Public License for more details.
-; 
+;
 ; You should have received a copy of the GNU General Public License
 ; along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
 #ifndef CI_VERSION
@@ -24,6 +24,7 @@
 #define MyAppURL        "https://github.com/namazso/OpenHashTab"
 #define MyCopyright     "(c) namazso. Licensed under GNU GPLv3 or (at your option) later."
 #define DLLName         "OpenHashTab.dll"
+#define StandaloneName  "StandaloneStub.exe"
 #define DLLCLSID        "{{23b5bdd4-7669-42b8-9cdc-beebc8a5baa9}"
 
 [Setup]
@@ -49,8 +50,14 @@ SolidCompression=yes
 WizardStyle=modern
 VersionInfoProductTextVersion={#CI_VERSION}
 VersionInfoVersion={#CI_VERSION_NUMERIC}
-ChangesAssociations = yes
+ChangesAssociations=yes
 UninstallDisplayIcon={app}\OpenHashTab.dll,0
+ArchitecturesAllowed=x64 arm64
+ArchitecturesInstallIn64BitMode=x64 arm64
+#ifdef SIGN
+SignTool=signtool $f
+SignedUninstaller=yes
+#endif
 
 [Languages]
 Name: "en"; MessagesFile: "compiler:Default.isl"
@@ -82,9 +89,16 @@ Name: "ChineseSimplified"; MessagesFile: "Localization\isl\ChineseSimplified.isl
 Name: "ChineseTraditional"; MessagesFile: "Localization\isl\ChineseTraditional.isl"
 
 [Files]
-Source: "bin\Release\Win32\*.dll"; DestDir: "{app}"; Flags: ignoreversion solidbreak restartreplace 32bit; Check: InstallArch('x86')
-Source: "bin\Release\x64\*.dll";   DestDir: "{app}"; Flags: ignoreversion solidbreak restartreplace 64bit; Check: InstallArch('x64')
-Source: "bin\Release\ARM64\*.dll"; DestDir: "{app}"; Flags: ignoreversion solidbreak restartreplace 64bit; Check: InstallArch('arm64') 
+Source: "AlgorithmsDlls\*.dll";                     DestDir: "{app}"; Flags: ignoreversion restartreplace;
+Source: "AlgorithmsDlls\*.pdb";                     DestDir: "{app}"; Flags: ignoreversion restartreplace;
+
+Source: "cmake-openhashtab-x64\OpenHashTab.dll";    DestDir: "{app}"; Flags: ignoreversion restartreplace 64bit; Check: InstallArch('x64')
+Source: "cmake-openhashtab-x64\*.exe";              DestDir: "{app}"; Flags: ignoreversion restartreplace 64bit; Check: InstallArch('x64')
+Source: "cmake-openhashtab-x64\*.pdb";              DestDir: "{app}"; Flags: ignoreversion restartreplace 64bit; Check: InstallArch('x64')
+
+Source: "cmake-openhashtab-ARM64\OpenHashTab.dll";  DestDir: "{app}"; Flags: ignoreversion restartreplace 64bit; Check: InstallArch('ARM64')
+Source: "cmake-openhashtab-ARM64\*.exe";            DestDir: "{app}"; Flags: ignoreversion restartreplace 64bit; Check: InstallArch('ARM64')
+Source: "cmake-openhashtab-ARM64\*.pdb";            DestDir: "{app}"; Flags: ignoreversion restartreplace 64bit; Check: InstallArch('ARM64')
 
 [CustomMessages]
 GroupDescription=Optional features:
@@ -120,7 +134,7 @@ Root: HKA; Subkey: "Software\Classes\AllFilesystemObjects\shellex\PropertySheetH
 Root: HKA; Subkey: "Software\Classes\AllFilesystemObjects\shellex\ContextMenuHandlers\{#DLLCLSID}";    ValueName: ""; Flags: uninsdeletekey; ValueType: none; Tasks: myContextMenu
 
 Root: HKA; Subkey: "Software\Classes\{#MyAppName}";                     ValueData: "Checksum file";      ValueType: string; ValueName: ""; Flags: uninsdeletekey;
-Root: HKA; Subkey: "Software\Classes\{#MyAppName}\shell\open\command";  ValueData: "rundll32 ""{app}\{#DLLName}"",StandaloneEntry ""%1""";  ValueType: string; ValueName: ""
+Root: HKA; Subkey: "Software\Classes\{#MyAppName}\shell\open\command";  ValueData: """{app}\{#StandaloneName}"" ""%1""";  ValueType: string; ValueName: ""
 Root: HKA; Subkey: "Software\Classes\{#MyAppName}\DefaultIcon";         ValueData: "{app}\{#DLLName},0"; ValueType: string; ValueName: ""
 
 Root: HKA; Subkey: "Software\Classes\.md5";        ValueType: string; ValueName: ""; ValueData: "{#MyAppName}"; Flags: uninsdeletevalue; Tasks: myAssociation
@@ -174,4 +188,4 @@ begin
         paIA64:   Result := (Arch = 'ia64') or (Arch = 'wow');
         paARM64:  Result := (Arch = 'arm64') or (Arch = 'wow');
     end;
-end; 
+end;

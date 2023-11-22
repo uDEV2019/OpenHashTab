@@ -1,4 +1,4 @@
-//    Copyright 2019-2022 namazso <admin@namazso.eu>
+//    Copyright 2019-2023 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -15,18 +15,13 @@
 //    along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
 #pragma once
 
-#include <list>
-#include <string>
-
 class FileHashTask;
 struct Settings;
 
-namespace vt
-{
+namespace vt {
   bool CheckForToS(Settings* settings, HWND hwnd);
 
-  struct Result
-  {
+  struct Result {
     std::string permalink;
     FileHashTask* file{};
     int positives{};

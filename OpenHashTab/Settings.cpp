@@ -1,4 +1,4 @@
-//    Copyright 2019-2022 namazso <admin@namazso.eu>
+//    Copyright 2019-2023 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -13,16 +13,13 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
-#include "stdafx.h"
-
 #include "Settings.h"
 
 #include "utl.h"
 
-constexpr static auto k_reg_path = L"Software\\OpenHashTab";
+static constexpr auto k_reg_path = L"Software\\OpenHashTab";
 
-DWORD detail::GetMachineSettingDWORD(const char* name, DWORD default_value)
-{
+DWORD detail::GetMachineSettingDWORD(const char* name, DWORD default_value) {
   DWORD value;
   DWORD size = sizeof(value);
   const auto status = RegGetValueW(
@@ -37,8 +34,7 @@ DWORD detail::GetMachineSettingDWORD(const char* name, DWORD default_value)
   return status == ERROR_SUCCESS ? value : default_value;
 }
 
-DWORD detail::GetSettingDWORD(const char* name, DWORD default_value)
-{
+DWORD detail::GetSettingDWORD(const char* name, DWORD default_value) {
   DWORD value;
   DWORD size = sizeof(value);
   const auto status = RegGetValueW(
@@ -53,8 +49,7 @@ DWORD detail::GetSettingDWORD(const char* name, DWORD default_value)
   return status == ERROR_SUCCESS ? value : default_value;
 }
 
-void detail::SetSettingDWORD(const char* name, DWORD new_value)
-{
+void detail::SetSettingDWORD(const char* name, DWORD new_value) {
   RegSetKeyValueW(
     HKEY_CURRENT_USER,
     k_reg_path,
@@ -65,8 +60,7 @@ void detail::SetSettingDWORD(const char* name, DWORD new_value)
   );
 }
 
-Settings::Settings()
-{
+Settings::Settings() {
   bool defaults[LegacyHashAlgorithm::k_count]{};
   for (const auto name : {"MD5", "SHA-1", "SHA-256", "SHA-512"})
     defaults[LegacyHashAlgorithm::IdxByName(name)] = true;

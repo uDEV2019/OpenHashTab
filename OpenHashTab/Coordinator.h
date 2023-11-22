@@ -1,4 +1,4 @@
-//    Copyright 2019-2022 namazso <admin@namazso.eu>
+//    Copyright 2019-2023 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -17,14 +17,11 @@
 #include "path.h"
 #include "Settings.h"
 
-#include <mutex>
-
 class FileHashTask;
 
-class Coordinator
-{
+class Coordinator {
 public:
-  constexpr static auto k_progress_resolution = 256u;
+  static constexpr auto k_progress_resolution = 256u;
 
 private:
   std::list<std::wstring> _files_raw;
@@ -58,44 +55,43 @@ public:
 
   // The window should probably only inspect files before processing or after all are done
   const std::list<std::unique_ptr<FileHashTask>>& GetFiles() const { return _file_tasks; }
+
   bool IsSumfile() const { return _is_sumfile; }
+
   std::pair<std::wstring, std::wstring> GetSumfileDefaultSavePathAndBaseName();
 
   Settings settings;
 };
 
-class PropPageCoordinator : public Coordinator
-{
+class PropPageCoordinator : public Coordinator {
 public:
   using Coordinator::Coordinator;
-  ~PropPageCoordinator() = default;
+  ~PropPageCoordinator() override = default;
 
-  void AddRef(HWND, LPPROPSHEETPAGEW) { }
+  void AddRef(HWND, LPPROPSHEETPAGEW) {}
+
   UINT Create(HWND, LPPROPSHEETPAGEW) { return 1; }
+
   void Release(HWND, LPPROPSHEETPAGEW) { delete this; }
 };
 
-class StandaloneCoordinator : public Coordinator
-{
+class StandaloneCoordinator : public Coordinator {
 public:
   using Coordinator::Coordinator;
-  ~StandaloneCoordinator() = default;
+  ~StandaloneCoordinator() override = default;
 
-  void UnregisterWindow() override
-  {
+  void UnregisterWindow() override {
     Coordinator::UnregisterWindow();
     PostQuitMessage(0);
   }
 };
 
-class WindowedCoordinator : public Coordinator
-{
+class WindowedCoordinator : public Coordinator {
 public:
   using Coordinator::Coordinator;
-  ~WindowedCoordinator() = default;
+  ~WindowedCoordinator() override = default;
 
-  void UnregisterWindow() override
-  {
+  void UnregisterWindow() override {
     Coordinator::UnregisterWindow();
     delete this;
   }

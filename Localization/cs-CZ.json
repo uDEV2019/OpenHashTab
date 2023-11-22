@@ -36,7 +36,7 @@
         "UPDATE_DISABLED_IN_DEV_BUILD": "Nedostupné ve vývojových sestaveních",
         "UPDATE_AVAILABLE_TITLE": "Aktualizace je k dispozici",
         "UPDATE_AVAILABLE_TEXT": "Je dostupná nová verze %hu.%hu.%hu",
-        "UPDATE_NEWEST_TITLE": "Gratulujeme ",
+        "UPDATE_NEWEST_TITLE": "Gratulujeme",
         "UPDATE_NEWEST_TEXT": "Již používáte nejnovější verzi",
         "CLIPBOARD_AUTOENABLE": "Pokud schránka obsahuje hash, automaticky pro běh povolí algoritmy této délky",
         "CLIPBOARD_AUTOENABLE_IF_NONE": "Pouze pokud nejsou povoleny žádné algoritmy této délky",
@@ -48,12 +48,12 @@
         "ITEM_MATCHING": "1 odpovídající soubor",
         "ITEMS_MATCHING": "%d odpovídajících souborů",
         "SUMFILE_ALGORITHM_ONLY": "Při zpracování sumsouboru známého algoritmu deaktivovat ostatní algoritmy",
-		"ERROR_GROUP": "Chybné",
-		"MATCH_GROUP": "Shodné",
-		"MISMATCH_GROUP": "Neshodné",
-		"INSECURE_GROUP": "Nejisté",
-		"UNKNOWN_GROUP": "Neznámé",
-		"FOREGROUND": "Popředí",
-		"BACKGROUND": "Pozadí"
+        "ERROR_GROUP": "Chybné",
+        "MATCH_GROUP": "Shodné",
+        "MISMATCH_GROUP": "Neshodné",
+        "INSECURE_GROUP": "Nejisté",
+        "UNKNOWN_GROUP": "Neznámé",
+        "FOREGROUND": "Popředí",
+        "BACKGROUND": "Pozadí"
     }
 }

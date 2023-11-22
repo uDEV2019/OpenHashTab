@@ -1,4 +1,4 @@
-//    Copyright 2019-2022 namazso <admin@namazso.eu>
+//    Copyright 2019-2023 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -15,10 +15,7 @@
 //    along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
 #pragma once
 
-#include <string>
-
-struct HTTPRequest
-{
+struct HTTPRequest {
   const wchar_t* user_agent;
   const wchar_t* server_name;
   const wchar_t* method;
@@ -28,12 +25,11 @@ struct HTTPRequest
   DWORD body_size;
 };
 
-struct HTTPResult
-{
+struct HTTPResult {
   std::string body;
   DWORD error_code;
-  union
-  {
+
+  union {
     DWORD http_code;
     DWORD error_location;
   };

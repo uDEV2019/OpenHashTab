@@ -1,5 +1,5 @@
 OpenHashTab - File hashing shell extension
-Copyright 2019-2022 namazso <admin@namazso.eu>
+Copyright 2019-2023 namazso <admin@namazso.eu>
 Licensed under GPLv3 or later.
 Code available at https://github.com/namazso/OpenHashTab
 
@@ -25,10 +25,6 @@ by duk
 
 blake3 reference implementation (CC0):
 by Samuel Neves and Jack O'Connor
-
-Partial code from Process Hacker (licensed under GPLv3 or later):
-Copyright (C) 2016-2020 dmex
-https://github.com/processhacker/processhacker
 
 tiny-json (licensed under MIT license):
 Copyright (c) 2018 Rafa Garcia
@@ -1017,7 +1013,7 @@ exhaustive, and do not form part of our licenses.
      such as asking that all changes be marked or described.
      Although not required by our licenses, you are encouraged to
      respect those requests where reasonable. More considerations
-     for the public: 
+     for the public:
 	wiki.creativecommons.org/Considerations_for_licensees
 
 =======================================================================

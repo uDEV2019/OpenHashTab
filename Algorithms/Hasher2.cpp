@@ -1,4 +1,4 @@
-//    Copyright 2019-2022 namazso <admin@namazso.eu>
+//    Copyright 2019-2023 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -28,23 +28,23 @@
 #include <mbedtls/ripemd160.h>
 #include "blake2sp.h"
 #include "Hasher2.h"
-#include "deps/crc32/Crc32.h"
-#include "deps/BLAKE3/c/blake3.h"
+#include <Crc32.h>
+#include <blake3.h>
 extern "C" {
 #include "KeccakHash.h"
 #include "KangarooTwelve.h"
 #include "SP800-185.h"
 }
 #include "crc64.h"
-#include "deps/QuickXorHash/quickxorhash.h"
+#include <quickxorhash.h>
 
 #define XXH_STATIC_LINKING_ONLY
 
-#include "deps/xxHash/xxhash.h"
+#include <xxhash.h>
 
 extern "C" {
 #define uint512_u uint512_u_STREEBOG
-#include "deps/streebog/gost3411-2012-core.h"
+#include <gost3411-2012-core.h>
 #undef uint512_u
 }
 
@@ -69,7 +69,7 @@ public:
     Init(&ctx);
     StartsRet(&ctx);
   }
-  
+
   void Update(const void* data, size_t size)
   {
     UpdateRet(&ctx, (const unsigned char*)data, size);
@@ -235,12 +235,12 @@ class ED2kHashContext final : public HashContext
   uint64_t hashed{};
 
   constexpr static auto k_chunk_size = 9728000;
-  
+
   void UpdateInternal(const void* data, size_t size)
   {
     if (size == 0)
       return;
-    
+
     mbedtls_md4_update_ret(&current_chunk, (const uint8_t*)data, size);
     hashed += size;
 
@@ -265,7 +265,7 @@ public:
     mbedtls_md4_init(&root_hash);
     mbedtls_md4_starts_ret(&root_hash);
   }
-  
+
   void Update(const void* data, size_t size)
   {
     const auto bytes = (const uint8_t*)data;
@@ -299,7 +299,7 @@ public:
         return;
       }
     }
-    
+
     mbedtls_md4_context copy_root_hash;
     mbedtls_md4_clone(&copy_root_hash, &root_hash);
 
@@ -368,7 +368,7 @@ public:
   {
     XXH32_reset(&ctx, 0);
   }
-  
+
   void Update(const void* data, size_t size)
   {
     XXH32_update(&ctx, data, size);
@@ -432,7 +432,7 @@ public:
   {
     XXH3_64bits_reset(&ctx);
   }
-  
+
   void Update(const void* data, size_t size)
   {
     XXH3_64bits_update(&ctx, data, size);
@@ -466,7 +466,7 @@ public:
   {
     XXH3_128bits_reset(&ctx);
   }
-  
+
   void Update(const void* data, size_t size)
   {
     XXH3_128bits_update(&ctx, data, size);
@@ -537,7 +537,7 @@ public:
       (unsigned)params[3]
     );
   }
-  
+
   void Update(const void* data, size_t size)
   {
     Keccak_HashUpdate(&ctx, (const BitSequence*)data, size * 8);
@@ -547,7 +547,7 @@ public:
   {
     Keccak_HashFinal(&ctx, (BitSequence*)out);
   }
-  
+
   size_t GetOutputSize()
   {
     return ctx.fixedOutputLength / 8;
@@ -575,7 +575,7 @@ public:
   {
     KangarooTwelve_Initialize(&ctx, (size_t)(params[0] / 8));
   }
-  
+
   void Update(const void* data, size_t size)
   {
     KangarooTwelve_Update(&ctx, (const unsigned char*)data, size);
@@ -615,7 +615,7 @@ public:
   {
     ParallelHash128_Initialize(&ctx, (size_t)params[0], (size_t)params[1], nullptr, 0);
   }
-  
+
   void Update(const void* data, size_t size)
   {
     ParallelHash128_Update(&ctx, (const unsigned char*)data, size);
@@ -655,7 +655,7 @@ public:
   {
     ParallelHash256_Initialize(&ctx, (size_t)params[0], (size_t)params[1], nullptr, 0);
   }
-  
+
   void Update(const void* data, size_t size)
   {
     ParallelHash256_Update(&ctx, (const unsigned char*)data, size);
@@ -859,8 +859,11 @@ constexpr HashAlgorithm k_algorithms[] = {
   make_algorithm<QuickXorHashContext>("QuickXorHash", false),
 };
 
-extern "C" __declspec(dllexport) constexpr const HashAlgorithm* k_algorithms_begin = std::begin(k_algorithms);
-extern "C" __declspec(dllexport) constexpr const HashAlgorithm* k_algorithms_end = std::end(k_algorithms);
+constexpr const HashAlgorithm* k_algorithms_begin = std::begin(k_algorithms);
+constexpr const HashAlgorithm* k_algorithms_end = std::end(k_algorithms);
+
+extern "C" const HashAlgorithm* get_algorithms_begin() { return k_algorithms_begin; }
+extern "C" const HashAlgorithm* get_algorithms_end() { return k_algorithms_end; }
 
 /*
 // these are what I found with a quick FTP search

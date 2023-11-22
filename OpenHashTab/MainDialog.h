@@ -1,4 +1,4 @@
-//    Copyright 2019-2022 namazso <admin@namazso.eu>
+//    Copyright 2019-2023 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -14,6 +14,7 @@
 //    You should have received a copy of the GNU General Public License
 //    along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
 #pragma once
+#include "hash_colors.h"
 #include "utl.h"
 #include "wnd.h"
 
@@ -21,21 +22,20 @@ class Exporter;
 class FileHashTask;
 class Coordinator;
 
-class MainDialog
-{
+class MainDialog {
   static constexpr auto k_status_update_timer_id = (UINT_PTR)0x7c253816f7ef92ea;
 
-  enum ColIndex : int
-  {
+  enum ColIndex : int {
     ColIndex_Filename,
     ColIndex_Algorithm,
     ColIndex_Hash
   };
 
   HWND _hwnd{};
-  utl::UniqueFont _font { utl::GetDPIScaledFont() };
+  utl::UniqueFont _font{utl::GetDPIScaledFont()};
+  utl::UniqueFont _mono_font{utl::GetDPIScaledFont(L"Lucida Console")};
   Coordinator* _prop_page;
-  wnd::WindowLayoutAdapter _adapter{ _hwnd, IDD_OPENHASHTAB_PROPPAGE };
+  wnd::WindowLayoutAdapter _adapter{_hwnd, IDD_OPENHASHTAB_PROPPAGE};
 
   MAKE_IDC_MEMBER(_hwnd, HASH_LIST);
   MAKE_IDC_MEMBER(_hwnd, EDIT_HASH);
@@ -52,6 +52,7 @@ class MainDialog
   MAKE_IDC_MEMBER(_hwnd, ALGORITHM_LIST);
   MAKE_IDC_MEMBER(_hwnd, PROGRESS);
   MAKE_IDC_MEMBER(_hwnd, BUTTON_VT);
+  MAKE_IDC_MEMBER(_hwnd, BUTTON_SUMMARY);
 
   unsigned _count_error{};
   unsigned _count_match{};
@@ -63,15 +64,18 @@ class MainDialog
 
   bool _temporary_status{};
   bool _finished{};
-  bool _inhibit_reformat{};
-  
+  // volatile because reentrancy, and clang-tidy doesn't recognize that
+  volatile bool _inhibit_reformat{};
+  HashColorType _check_against_color{HashColorType::Unknown};
+  utl::UniqueBrush _check_against_brush{};
+
   static INT_PTR CustomDrawListView(LPARAM lparam, HWND list);
 
   std::string GetSumfileAsString(const Exporter* exporter, bool for_clipboard);
   void AddItemToFileList(LPCWSTR filename, LPCWSTR algorithm, LPCWSTR hash, LPARAM lparam);
   void SetTempStatus(LPCWSTR status, UINT time);
   void UpdateDefaultStatus(bool force_reset = false);
-  
+
   void ListDoubleClick(int item, int subitem);
   void ListPopupMenu(POINT pt);
   void ListSort(ColIndex col, bool desc);
@@ -93,10 +97,11 @@ private:
   INT_PTR OnExportClicked(UINT, WPARAM, LPARAM);
   INT_PTR OnCancelClicked(UINT, WPARAM, LPARAM);
   INT_PTR OnVTClicked(UINT, WPARAM, LPARAM);
+  INT_PTR OnSummaryClicked(UINT, WPARAM, LPARAM);
   INT_PTR OnClose(UINT, WPARAM, LPARAM);
   INT_PTR OnNeedAdjust(UINT, WPARAM, LPARAM);
   INT_PTR OnHashEditChanged(UINT, WPARAM, LPARAM);
+  INT_PTR OnEditColor(UINT, WPARAM, LPARAM);
   INT_PTR OnClipboardClicked(UINT, WPARAM, LPARAM);
   INT_PTR OnSettingsClicked(UINT, WPARAM, LPARAM);
 };
-

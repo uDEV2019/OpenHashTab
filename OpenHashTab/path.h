@@ -1,4 +1,4 @@
-﻿//    Copyright 2019-2022 namazso <admin@namazso.eu>
+﻿//    Copyright 2019-2023 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -14,27 +14,22 @@
 //    You should have received a copy of the GNU General Public License
 //    along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
 #pragma once
-#include "../AlgorithmsLoader/Hasher.h"
-
-#include <unordered_map>
-#include <list>
+#include <Hasher.h>
 
 #include "Settings.h"
 
-struct ProcessedFileList
-{
+struct ProcessedFileList {
   // -2: not sumfile
   // -1: unknown sumfile
   // 0+: a sumfile belonging to the algorithm given
-  // 
+  //
   // If the main file is a sumfile of a hash format we don't have enabled we want to enable it for this session.
   int sumfile_type{-2};
 
   // A Win32 path to a directory that supposedly contains all files hashed. Ends with a slash.
   std::wstring base_path;
 
-  struct FileInfo
-  {
+  struct FileInfo {
     // Path relative to base_path, absolute if base_path is not root for the file
     std::wstring relative_path;
 

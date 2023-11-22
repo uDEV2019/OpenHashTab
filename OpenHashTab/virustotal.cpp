@@ -1,4 +1,4 @@
-//    Copyright 2019-2022 namazso <admin@namazso.eu>
+//    Copyright 2019-2023 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -13,34 +13,26 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
-#include "stdafx.h"
-
 #include "virustotal.h"
 
 #include "FileHashTask.h"
-#include "Settings.h"
-#include "stringencrypt.h"
-#include "utl.h"
 #include "https.h"
 #include "json.h"
-
-#include <unordered_map>
-#include <sstream>
+#include "Settings.h"
+#include "utl.h"
 
 #include "virustotal_api.h"
 
-bool vt::CheckForToS(Settings* settings, HWND hwnd)
-{
-  if(!settings->virustotal_tos)
-  {
+bool vt::CheckForToS(Settings* settings, HWND hwnd) {
+  if (!settings->virustotal_tos) {
     const auto answer = utl::FormattedMessageBox(
       hwnd,
-      ESTRt(L"VirusTotal Terms of Service"),
+      L"VirusTotal Terms of Service",
       MB_YESNO,
-      ESTRt(L"The following data will be sent: file path, creation date, hash\r\n"
+      L"The following data will be sent: file path, creation date, hash\r\n"
       L"You must agree to VirusTotal's terms of service to use this.\r\n"
       L"The ToS is available at https://www.virustotal.com/about/terms-of-service\r\n"
-      L"Do you agree to the VirusTotal Terms of Service?")
+      L"Do you agree to the VirusTotal Terms of Service?"
     );
 
     if (answer == IDYES)
@@ -49,15 +41,13 @@ bool vt::CheckForToS(Settings* settings, HWND hwnd)
   return settings->virustotal_tos;
 }
 
-std::list<vt::Result> vt::Query(const std::list<FileHashTask*>& files, size_t algo)
-{
+std::list<vt::Result> vt::Query(const std::list<FileHashTask*>& files, size_t algo) {
   std::string query_str;
   {
     std::stringstream query;
     query << "[";
     bool first = true;
-    for (const auto& h : files)
-    {
+    for (const auto& h : files) {
       if (h->GetError() != 0)
         continue;
 
@@ -78,78 +68,73 @@ std::list<vt::Result> vt::Query(const std::list<FileHashTask*>& files, size_t al
         "autostart_location": "",
         "autostart_entry": "",
         "hash": "%s",
-        "image_path": "%S",
+        "image_path": "%s",
         "creation_datetime": "%04u-%02u-%02u %02u:%02u:%02u"
         })",
-        hash,
-        h->GetDisplayName().c_str(),
-        st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond
-      );
+                                 hash,
+                                 utl::WideToUTF8(h->GetDisplayName().c_str()).c_str(),
+                                 st.wYear,
+                                 st.wMonth,
+                                 st.wDay,
+                                 st.wHour,
+                                 st.wMinute,
+                                 st.wSecond);
     }
     query << "]";
     query_str = query.str();
   }
 
-  const auto user_agent =   ESTR(TEXT(VT_USERAGENT))();
-  const auto server_name =  ESTR(L"www.virustotal.com")();
-  const auto method =       ESTR(L"POST")();
-  const auto uri =          ESTR(L"/partners/sysinternals/file-reports?\x0061\x0070\x0069\x006b\x0065\x0079=" VT_MAGICNUMBERS)();
-  const auto headers =      ESTR(L"Content-Type: application/json\r\n")();
-
   HTTPRequest r{};
-  r.user_agent = user_agent.data();
-  r.server_name = server_name.data();
-  r.method = method.data();
-  r.uri = uri.data();
-  r.headers = headers.data();
+  r.user_agent = L"" VT_USERAGENT;
+  r.server_name = L"www.virustotal.com";
+  r.method = L"POST";
+  r.uri = L"/partners/sysinternals/file-reports?\x0061\x0070\x0069\x006b\x0065\x0079=" VT_MAGICNUMBERS;
+  r.headers = L"Content-Type: application/json\r\n";
   r.body = query_str.c_str();
   r.body_size = static_cast<DWORD>(query_str.size());
 
   const auto reply = DoHTTPS(r);
 
-  if(reply.error_code)
+  if (reply.error_code)
     throw std::runtime_error(utl::FormatString(
-      ESTRt("Error %08X at %d: %s"),
+      "Error %08X at %d: %ls",
       reply.error_code,
       reply.error_location,
       utl::ErrorToString(reply.error_code).c_str()
     ));
 
-  if(reply.http_code != 200)
+  if (reply.http_code != 200)
     throw std::runtime_error(utl::FormatString(
-      ESTRt("HTTP Status %d received. Server says: %s"),
+      "HTTP Status %d received. Server says: %s",
       reply.http_code,
       reply.body.c_str()
     ));
 
 
-  json_parser parser{ reply.body.c_str() };
+  json_parser parser{reply.body.c_str()};
   const auto root = parser.root();
 
-  if(!root)
+  if (!root)
     throw std::runtime_error(utl::FormatString(
-      ESTRt("JSON parse error. Body: %s"),
+      "JSON parse error. Body: %s",
       reply.body.c_str()
     ));
 
   const auto j_data = json_getProperty(root, "data");
-  if(!j_data || json_getType(j_data) != JSON_ARRAY)
+  if (!j_data || json_getType(j_data) != JSON_ARRAY)
     throw std::runtime_error(utl::FormatString(
-      ESTRt("Malformed reply. Body: %s"),
+      "Malformed reply. Body: %s",
       reply.body.c_str()
     ));
 
   auto j_child = json_getChild(j_data);
   std::unordered_map<std::string, Result> result_map;
-  do
-  {
+  do {
     const auto j_found = json_getProperty(j_child, "found");
     const auto j_hash = json_getProperty(j_child, "hash");
-    if(j_found && j_hash && json_getType(j_found) == JSON_BOOLEAN && json_getType(j_hash) == JSON_TEXT)
-    {
+    if (j_found && j_hash && json_getType(j_found) == JSON_BOOLEAN && json_getType(j_hash) == JSON_TEXT) {
       Result res{};
-      if (json_getBoolean(j_found) == true)
-      {
+      if (json_getBoolean(j_found)) {
         res.found = true;
         const auto j_permalink = json_getProperty(j_child, "permalink");
         const auto j_positives = json_getProperty(j_child, "positives");
@@ -169,13 +154,11 @@ std::list<vt::Result> vt::Query(const std::list<FileHashTask*>& files, size_t al
   } while (j_child);
 
   std::list<Result> result;
-  for(const auto f : files)
-  {
+  for (const auto f : files) {
     char hash[LegacyHashAlgorithm::k_max_size * 2 + 1]{};
     utl::HashBytesToString(hash, f->GetHashResult()[algo]);
     const auto res = result_map.find(hash);
-    if(res != end(result_map))
-    {
+    if (res != end(result_map)) {
       auto copy = res->second;
       copy.file = f;
       result.push_back(copy);

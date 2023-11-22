@@ -1,4 +1,4 @@
-//    Copyright 2019-2022 namazso <admin@namazso.eu>
+//    Copyright 2019-2023 namazso <admin@namazso.eu>
 //    This file is part of OpenHashTab.
 //
 //    OpenHashTab is free software: you can redistribute it and/or modify
@@ -13,21 +13,19 @@
 //
 //    You should have received a copy of the GNU General Public License
 //    along with OpenHashTab.  If not, see <https://www.gnu.org/licenses/>.
-#define VC_EXTRALEAN
 #define WIN32_LEAN_AND_MEAN
 
-#include <cassert>
 #include <Windows.h>
+
+#include <cassert>
 #include <random>
 
-#include "../AlgorithmsLoader/Hasher.h"
+#include <Hasher.h>
 
-int main()
-{
-  //constexpr static auto k_passes = 5u;
-  //constexpr static auto k_size = 1ull << 30;
-  constexpr static auto k_passes = 3u;
-  constexpr static auto k_size = 100ull << 20;
+int main() {
+  static constexpr auto k_passes = 20u;
+  // 4 MB so that it fits in (my) L2 cache
+  static constexpr auto k_size = 4ull << 20;
 
   const auto p = (uint64_t*)VirtualAlloc(
     nullptr,
@@ -36,25 +34,22 @@ int main()
     PAGE_READWRITE
   );
 
-  if (!p)
-  {
+  if (!p) {
     printf("VirtualAlloc failed.");
     return 1;
   }
 
-  std::mt19937_64 engine{ 0 };  // NOLINT(cert-msc51-cpp)
+  std::mt19937_64 engine{0}; // NOLINT(cert-msc51-cpp)
   std::generate_n(p, k_size / sizeof(*p), [&engine] { return engine(); });
 
   LARGE_INTEGER frequency{};
   QueryPerformanceFrequency(&frequency);
 
-  uint64_t measurements[k_passes][LegacyHashAlgorithm::k_count]{};
+  int64_t measurements[LegacyHashAlgorithm::k_count][k_passes]{};
 
-  for (auto& measurement : measurements)
-  {
-    for (auto i = 0u; i < LegacyHashAlgorithm::k_count; ++i)
-    {
-      auto& h = LegacyHashAlgorithm::Algorithms()[i];
+  for (auto i = 0u; i < k_passes; ++i) {
+    for (auto j = 0u; j < LegacyHashAlgorithm::k_count; ++j) {
+      auto& h = LegacyHashAlgorithm::Algorithms()[j];
       auto ctx = h.MakeContext();
 
       LARGE_INTEGER begin{}, end{};
@@ -62,7 +57,7 @@ int main()
       QueryPerformanceCounter(&begin);
 
       ctx.Update(p, k_size);
-      uint8_t hash[LegacyHashAlgorithm::k_max_size+4];
+      uint8_t hash[LegacyHashAlgorithm::k_max_size + 4];
 #ifndef NDEBUG
       const auto size = h.GetSize();
       hash[size - 4] = 0xFF;
@@ -92,32 +87,36 @@ int main()
       assert(fills_space);
 #endif
 
-      // copy into volatile to ensure Finish isnt optimized away
+      // copy into volatile to ensure Finish isn't optimized away
       volatile uint8_t hash_cpy[LegacyHashAlgorithm::k_max_size];
       std::copy_n(std::begin(hash), std::size(hash_cpy), std::begin(hash_cpy));
 
       QueryPerformanceCounter(&end);
-      
-      measurement[i] = end.QuadPart - begin.QuadPart;
+
+      measurements[j][i] = end.QuadPart - begin.QuadPart;
     }
   }
 
-  for (auto i = 0u; i < LegacyHashAlgorithm::k_count; ++i)
-  {
+  for (auto i = 0u; i < LegacyHashAlgorithm::k_count; ++i) {
     auto& h = LegacyHashAlgorithm::Algorithms()[i];
 
-    printf("%s\t", h.GetName());
+    printf("%-16s\t", h.GetName());
 
-    uint64_t sum = 0;
+    int64_t sum = 0;
 
-    for (const auto& measurement : measurements)
-    {
-      const auto v = measurement[i];
+    auto& measurement = measurements[i];
+    std::sort(std::begin(measurement), std::end(measurement));
+
+    static constexpr auto skip = (unsigned)(0.2 * k_passes);
+    for (auto j = skip; j < k_passes - skip; ++j) {
+      const auto v = measurement[j];
       sum += v;
-      printf("%llu\t", v);
+      printf("%lld\t", v);
     }
 
-    const auto mbps = (k_size * frequency.QuadPart) / (double(sum) / k_passes) / (1ull << 20); // MB/s
+    const auto avg = (double(sum) / (k_passes - 2 * skip));
+
+    const auto mbps = (double)(k_size * frequency.QuadPart) / avg / (1ll << 20); // MB/s
 
     printf("%.7lf MB/s\n", mbps);
   }
