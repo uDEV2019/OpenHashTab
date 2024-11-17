@@ -52,8 +52,8 @@ VersionInfoProductTextVersion={#CI_VERSION}
 VersionInfoVersion={#CI_VERSION_NUMERIC}
 ChangesAssociations=yes
 UninstallDisplayIcon={app}\OpenHashTab.dll,0
-ArchitecturesAllowed=x64 arm64
-ArchitecturesInstallIn64BitMode=x64 arm64
+ArchitecturesAllowed=win64
+ArchitecturesInstallIn64BitMode=win64
 #ifdef SIGN
 SignTool=signtool $f
 SignedUninstaller=yes
@@ -96,9 +96,9 @@ Source: "cmake-openhashtab-x64\OpenHashTab.dll";    DestDir: "{app}"; Flags: ign
 Source: "cmake-openhashtab-x64\*.exe";              DestDir: "{app}"; Flags: ignoreversion restartreplace 64bit; Check: InstallArch('x64')
 Source: "cmake-openhashtab-x64\*.pdb";              DestDir: "{app}"; Flags: ignoreversion restartreplace 64bit; Check: InstallArch('x64')
 
-Source: "cmake-openhashtab-ARM64\OpenHashTab.dll";  DestDir: "{app}"; Flags: ignoreversion restartreplace 64bit; Check: InstallArch('ARM64')
-Source: "cmake-openhashtab-ARM64\*.exe";            DestDir: "{app}"; Flags: ignoreversion restartreplace 64bit; Check: InstallArch('ARM64')
-Source: "cmake-openhashtab-ARM64\*.pdb";            DestDir: "{app}"; Flags: ignoreversion restartreplace 64bit; Check: InstallArch('ARM64')
+Source: "cmake-openhashtab-ARM64\OpenHashTab.dll";  DestDir: "{app}"; Flags: ignoreversion restartreplace 64bit; Check: InstallArch('arm64')
+Source: "cmake-openhashtab-ARM64\*.exe";            DestDir: "{app}"; Flags: ignoreversion restartreplace 64bit; Check: InstallArch('arm64')
+Source: "cmake-openhashtab-ARM64\*.pdb";            DestDir: "{app}"; Flags: ignoreversion restartreplace 64bit; Check: InstallArch('arm64')
 
 [CustomMessages]
 GroupDescription=Optional features:
@@ -185,7 +185,6 @@ begin
     case ProcessorArchitecture of
         paX86:    Result := Arch = 'x86';
         paX64:    Result := (Arch = 'x64') or (Arch = 'wow');
-        paIA64:   Result := (Arch = 'ia64') or (Arch = 'wow');
         paARM64:  Result := (Arch = 'arm64') or (Arch = 'wow');
     end;
 end;
